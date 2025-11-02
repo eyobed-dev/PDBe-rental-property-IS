@@ -1,4 +1,16 @@
+---FIT BUT
+---PDBe -- project
+---Part 2
 
+-- Team Xnuriey00
+-- https://gitlab.com/fit-vut1/pdbe/rental-property-is
+
+
+-- =================================================================
+
+-- =================================================================
+
+-- =================================================================
 
 -- Script crash if we drop a table that does not exist so we wrap it with exception handler
 
@@ -124,6 +136,7 @@ CREATE TABLE CELLULAR_COVERAGE (
 
 
 --fix oracle spatial metadata table(to do ....)
+
 DELETE FROM USER_SDO_GEOM_METADATA;
 
 --for the spatial grid system we are going to use earth latitude and longtiude GPS coordinate(8307 type) to this oracle table
@@ -140,22 +153,41 @@ INSERT INTO USER_SDO_GEOM_METADATA (TABLE_NAME, COLUMN_NAME, DIMINFO, SRID) VALU
 COMMIT;
 
 
-
--- Index -------
+--
+-- Index ------- we need index for quick look uo of stuff
 -- User table
-CREATE INDEX IDX_USERS_LASTNAME ON USERS(LAST_NAME);
-CREATE INDEX IDX_USERS_FIRSTNAME ON USERS(FIRST_NAME);
+CREATE INDEX INDEX_OF_USERS_LASTNAME ON USERS(LAST_NAME);
+CREATE INDEX INDEX_OF_USERS_FIRSTNAME ON USERS(FIRST_NAME);
 
+
+
+--index foregin keys for fastest joining query
+
+CREATE INDEX index_of_properties_building_id ON PROPERTIES(BUILDING_ID);
+CREATE INDEX index_of_properties_user_id ON PROPERTIES(LISTING_USER_ID);
+CREATE INDEX index_of_images_property_id ON PROPERTY_IMAGES(PROPERTY_ID);
+
+
+-- spatial database r-tree index(useful for spatial query)
+CREATE INDEX index_of_properties_unit_geom ON PROPERTIES(UNIT_GEOMETRY) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2;
+CREATE INDEX index_of_buildings_geom ON BUILDINGS(GEOMETRY) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2;
+CREATE INDEX index_of_neighborhoods_geom ON NEIGHBORHOOD_ZONES(GEOMETRY) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2;
+CREATE INDEX index_of_schools_geom ON SCHOOL_CATCHMENT_AREAS(GEOMETRY) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2;
+CREATE INDEX index_of_transit_stops_geom ON TRANSIT_STOPS(GEOMETRY) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2;
+CREATE INDEX index_of_cellular_geom ON CELLULAR_COVERAGE(GEOMETRY) INDEXTYPE IS MDSYS.SPATIAL_INDEX_V2;
+
+--multimedia index based on oracle index algorithm
+-- Multimedia Index for content-based image search
+CREATE INDEX index_of_images_ordimage ON PROPERTY_IMAGES(IMAGE_DATA) INDEXTYPE IS ORDSYS.ORDImageIndex;
+
+
+
+-- below uses old index algorithm so ...
+/*
 -- Buildings table
 CREATE INDEX IDX_BUILDINGS_GEOM
 ON BUILDINGS(GEOMETRY)
 INDEXTYPE IS MDSYS.SPATIAL_INDEX;
-
--- properties
-CREATE INDEX IDX_PROPERTIES_PRICE ON PROPERTIES(PRICE);
-
--- properties
-CREATE INDEX IDX_PROPERTIES_BEDROOMS ON PROPERTIES(NUM_BEDROOMS);
 
 -- Neighborhood
 CREATE INDEX IDX_ZONE_GEOM
@@ -176,111 +208,14 @@ INDEXTYPE IS MDSYS.SPATIAL_INDEX;
 CREATE INDEX IDX_COVERAGE_GEOM
 ON CELLULAR_COVERAGE(GEOMETRY)
 INDEXTYPE IS MDSYS.SPATIAL_INDEX;
+*/
 
 
 
+
+
+-- some testings...
 
 -- INSERT INTO USERS (USERNAME, PASSWORD_HASH, EMAIL, FIRST_NAME, LAST_NAME)
 -- VALUES ('jdoe', 'hashed_password_123', 'jdoe@example.com', 'John', 'Doe');
 --
--- INSERT INTO USERS (USERNAME, PASSWORD_HASH, EMAIL, FIRST_NAME, LAST_NAME)
--- VALUES ('asmith', 'hashed_password_456', 'asmith@example.com', 'Alice', 'Smith');
---
--- INSERT INTO BUILDINGS (BUILDING_NAME, ADDRESS, GEOMETRY)
--- VALUES (
---     'Sunset Apartments',
---     '123 Main Street, Downtown',
---     MDSYS.SDO_GEOMETRY(2003, 4326, NULL,
---         MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),
---         MDSYS.SDO_ORDINATE_ARRAY(40.7128, -74.0060, 40.7129, -74.0059, 40.7130, -74.0061, 40.7128, -74.0060))
--- );
---
--- INSERT INTO BUILDINGS (BUILDING_NAME, ADDRESS, GEOMETRY)
--- VALUES (
---     'Greenview Condos',
---     '45 Oak Avenue, Uptown',
---     MDSYS.SDO_GEOMETRY(2003, 4326, NULL,
---         MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),
---         MDSYS.SDO_ORDINATE_ARRAY(40.7306, -73.9352, 40.7307, -73.9351, 40.7308, -73.9353, 40.7306, -73.9352))
--- );
---
--- INSERT INTO PROPERTIES (UNIT_NUMBER, PRICE, NUM_BEDROOMS, SQUARE_METERS, DESCRIPTION, BUILDING_ID, LISTING_USER_ID, UNIT_GEOMETRY)
--- VALUES (
---     'A1', 1200.00, 2, 85.5, 'Spacious 2-bedroom apartment with balcony view.',
---     1, 1,
---     MDSYS.SDO_GEOMETRY(2001, 4326, MDSYS.SDO_POINT_TYPE(40.71285, -74.00605, NULL), NULL, NULL)
--- );
---
--- INSERT INTO PROPERTIES (UNIT_NUMBER, PRICE, NUM_BEDROOMS, SQUARE_METERS, DESCRIPTION, BUILDING_ID, LISTING_USER_ID, UNIT_GEOMETRY)
--- VALUES (
---     'B3', 950.00, 1, 60.0, 'Cozy 1-bedroom condo with modern kitchen.',
---     2, 2,
---     MDSYS.SDO_GEOMETRY(2001, 4326, MDSYS.SDO_POINT_TYPE(40.73065, -73.93525, NULL), NULL, NULL)
--- );
---
--- INSERT INTO PROPERTY_IMAGES (PROPERTY_ID, IMAGE_NAME, IMAGE_DATA)
--- VALUES (1, 'sunset_apt_view.jpg', NULL);
---
--- INSERT INTO PROPERTY_IMAGES (PROPERTY_ID, IMAGE_NAME, IMAGE_DATA)
--- VALUES (2, 'greenview_condo_livingroom.jpg', NULL);
---
--- INSERT INTO NEIGHBORHOOD_ZONES (NAME, GEOMETRY)
--- VALUES (
---     'Downtown Zone',
---     MDSYS.SDO_GEOMETRY(2003, 4326, NULL,
---         MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),
---         MDSYS.SDO_ORDINATE_ARRAY(40.7127, -74.0061, 40.7135, -74.0055, 40.7140, -74.0062, 40.7127, -74.0061))
--- );
---
--- INSERT INTO NEIGHBORHOOD_ZONES (NAME, GEOMETRY)
--- VALUES (
---     'Uptown Zone',
---     MDSYS.SDO_GEOMETRY(2003, 4326, NULL,
---         MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),
---         MDSYS.SDO_ORDINATE_ARRAY(40.7304, -73.9354, 40.7310, -73.9350, 40.7308, -73.9356, 40.7304, -73.9354))
--- );
---
--- INSERT INTO SCHOOL_CATCHMENT_AREAS (NAME, GEOMETRY)
--- VALUES (
---     'Central High Catchment',
---     MDSYS.SDO_GEOMETRY(2003, 4326, NULL,
---         MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),
---         MDSYS.SDO_ORDINATE_ARRAY(40.713, -74.007, 40.714, -74.006, 40.714, -74.007, 40.713, -74.007))
--- );
---
--- INSERT INTO SCHOOL_CATCHMENT_AREAS (NAME, GEOMETRY)
--- VALUES (
---     'North Elementary Catchment',
---     MDSYS.SDO_GEOMETRY(2003, 4326, NULL,
---         MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),
---         MDSYS.SDO_ORDINATE_ARRAY(40.731, -73.936, 40.732, -73.935, 40.732, -73.936, 40.731, -73.936))
--- );
---
--- INSERT INTO TRANSIT_STOPS (NAME, GEOMETRY)
--- VALUES (
---     'Main Street Station',
---     MDSYS.SDO_GEOMETRY(2001, 4326, MDSYS.SDO_POINT_TYPE(40.7129, -74.0062, NULL), NULL, NULL)
--- );
---
--- INSERT INTO TRANSIT_STOPS (NAME, GEOMETRY)
--- VALUES (
---     'Oak Avenue Stop',
---     MDSYS.SDO_GEOMETRY(2001, 4326, MDSYS.SDO_POINT_TYPE(40.7307, -73.9351, NULL), NULL, NULL)
--- );
---
--- INSERT INTO CELLULAR_COVERAGE (PROVIDER_NAME, GEOMETRY)
--- VALUES (
---     'TelNet Communications',
---     MDSYS.SDO_GEOMETRY(2003, 4326, NULL,
---         MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),
---         MDSYS.SDO_ORDINATE_ARRAY(40.712, -74.007, 40.714, -74.005, 40.713, -74.006, 40.712, -74.007))
--- );
---
--- INSERT INTO CELLULAR_COVERAGE (PROVIDER_NAME, GEOMETRY)
--- VALUES (
---     'CityWave Mobile',
---     MDSYS.SDO_GEOMETRY(2003, 4326, NULL,
---         MDSYS.SDO_ELEM_INFO_ARRAY(1,1003,1),
---         MDSYS.SDO_ORDINATE_ARRAY(40.731, -73.937, 40.732, -73.935, 40.7315, -73.936, 40.731, -73.937))
--- );
-

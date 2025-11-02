@@ -14,6 +14,7 @@
 
 -- Script crash if we drop a table that does not exist so we wrap it with exception handler
 
+-- we used PL/sql to handle this 
 
 BEGIN
     EXECUTE IMMEDIATE 'DROP TABLE PROPERTY_IMAGES';
@@ -178,7 +179,8 @@ CREATE INDEX index_of_cellular_geom ON CELLULAR_COVERAGE(GEOMETRY) INDEXTYPE IS 
 
 --multimedia index based on oracle index algorithm
 -- Multimedia Index for content-based image search
-CREATE INDEX index_of_images_ordimage ON PROPERTY_IMAGES(IMAGE_DATA) INDEXTYPE IS ORDSYS.ORDImageIndex;
+--doesn't work on campus server?? we will fix later'
+--CREATE INDEX index_of_images_ordimage ON PROPERTY_IMAGES(IMAGE_DATA) INDEXTYPE IS ORDSYS.ORDImageIndex;
 
 
 

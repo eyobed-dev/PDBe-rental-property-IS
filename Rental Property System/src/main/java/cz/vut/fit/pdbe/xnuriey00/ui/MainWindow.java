@@ -1,5 +1,5 @@
 
-package cz.vut.fit;
+package cz.vut.fit.pdbe.xnuriey00.ui;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -9,12 +9,12 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-public class UI extends JFrame {
+public class MainWindow extends JFrame {
 
 
 
 
-    public UI() { 
+    public MainWindow() {
         setTitle("Rental Property IS");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1400, 800);

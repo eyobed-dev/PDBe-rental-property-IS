@@ -6,9 +6,13 @@ import java.awt.GridLayout;
 
 public class Main {
     public static void main(String[] args) {
-        FlatLightLaf.setup(); // Make it look nice
+        try {
+            UIManager.setLookAndFeel(new FlatLightLaf());
+        } catch (Exception ex) {
+            System.err.println("flatlaf fail");
+        }
 
-        //Thread problem solution if the db is stuck
+        // Thread problem solution if the db is stuck
         SwingUtilities.invokeLater(() -> {
 
             // Simple Login
@@ -16,16 +20,18 @@ public class Main {
             JTextField user = new JTextField("xnuriey00"); // Prefill for ease
             JPasswordField pass = new JPasswordField();
 
-
-            panel.add(new JLabel("User:")); panel.add(user);
-            panel.add(new JLabel("Pass:")); panel.add(pass);
+            panel.add(new JLabel("User:"));
+            panel.add(user);
+            panel.add(new JLabel("Pass:"));
+            panel.add(pass);
+            // Ditched the service ID since it doesn't change. hard coded in DB.java
 
             int result = JOptionPane.showConfirmDialog(null, panel, "Oracle Login", JOptionPane.OK_CANCEL_OPTION);
 
             if (result == JOptionPane.OK_OPTION) {
                 try {
-                    DB.connect(user.getText(), new String(pass.getPassword()));
-                    new UI();
+                    //DB.connect(user.getText(), new String(pass.getPassword()));
+                    new UI().setVisible(true);
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(null, "Fail\n\n " + e.getMessage());
                 }

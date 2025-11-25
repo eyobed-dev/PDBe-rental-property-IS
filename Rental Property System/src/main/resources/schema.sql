@@ -89,6 +89,13 @@ CREATE TABLE PROPERTY_IMAGES (
     IMAGE_NAME          VARCHAR2(100),
     UPLOAD_DATE         DATE            DEFAULT SYSDATE,
     IMAGE_DATA          ORDSYS.ORDImage,
+    IMAGE_SI            ORDSYS.SI_StillImage,
+    
+    -- Image Features (Metadata for similarity search)
+    IMAGE_AC            ORDSYS.SI_AverageColor,
+    IMAGE_CH            ORDSYS.SI_ColorHistogram,
+    IMAGE_PC            ORDSYS.SI_PositionalColor,
+    IMAGE_TX            ORDSYS.SI_Texture,
     FOREIGN KEY (PROPERTY_ID) REFERENCES PROPERTIES(PROPERTY_ID) ON DELETE CASCADE --deleting property delets all images related to it
 );
 

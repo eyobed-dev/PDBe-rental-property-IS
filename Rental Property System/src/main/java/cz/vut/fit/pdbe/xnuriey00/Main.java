@@ -32,9 +32,11 @@ public class Main {
         }
 
         // Thread problem solution if the db is stuck
-        SwingUtilities.invokeLater(() -> {
-            new InitialWindow().setVisible(true);
-        });
+        SwingUtilities.invokeLater(Main::launch);
 
+    }
+
+    public static void launch() {
+        new InitialWindow().setVisible(true);
     }
 }

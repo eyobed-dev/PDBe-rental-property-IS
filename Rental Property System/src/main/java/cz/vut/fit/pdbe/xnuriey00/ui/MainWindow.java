@@ -1,6 +1,9 @@
 
 package cz.vut.fit.pdbe.xnuriey00.ui;
 
+import cz.vut.fit.pdbe.xnuriey00.Main;
+import cz.vut.fit.pdbe.xnuriey00.util.UserSession;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
@@ -56,13 +59,24 @@ public class MainWindow extends JFrame {
 
         JButton refreshBtn = new JButton("REFRESH");
         JButton helpBtn = new JButton("HELP");
+
         JButton logoutBtn = new JButton("LOGOUT");
 
         // HEADER ACTION LISTENERS
         refreshBtn.addActionListener(e -> System.out.println("Header: Refresh clicked"));
         helpBtn.addActionListener(e -> System.out.println("Header: Help clicked"));
-        logoutBtn.addActionListener(e -> System.out.println("Header: Logout clicked"));
+        logoutBtn.addActionListener(e -> {
+            UserSession.getInstance().logout();
+            this.dispose();
+            Main.launch();
+        });
 
+        if (UserSession.getInstance().isAdmin()) {
+            JButton manageUsers = new JButton("MANAGE USERS");
+            manageUsers.addActionListener(e -> new UserManagementWindow().setVisible(true));
+            buttonPanel.add(manageUsers);
+
+        }
         buttonPanel.add(refreshBtn);
         buttonPanel.add(helpBtn);
         buttonPanel.add(logoutBtn);

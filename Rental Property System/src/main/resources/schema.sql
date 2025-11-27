@@ -99,7 +99,26 @@ CREATE TABLE PROPERTY_IMAGES (
     FOREIGN KEY (PROPERTY_ID) REFERENCES PROPERTIES(PROPERTY_ID) ON DELETE CASCADE --deleting property delets all images related to it
 );
 
-
+-- https://rychly-edu.gitlab.io/dbs/multimedia/oracle/#storing-images
+CREATE OR REPLACE TRIGGER images_generateFeatures
+ BEFORE INSERT OR UPDATE OF IMAGE_DATA ON PROPERTY_IMAGES
+ FOR EACH ROW
+DECLARE
+ si ORDSYS.SI_StillImage;
+BEGIN
+ -- If the new image has content (height is a good proxy for content existence)
+ IF :NEW.IMAGE_DATA.height IS NOT NULL THEN
+    -- Create SI_StillImage from the raw content
+    si := new SI_StillImage(:NEW.IMAGE_DATA.getContent());
+    
+    -- Assign to columns
+    :NEW.IMAGE_SI := si;
+    :NEW.IMAGE_AC := SI_AverageColor(si);
+    :NEW.IMAGE_CH := SI_ColorHistogram(si);
+    :NEW.IMAGE_PC := SI_PositionalColor(si);
+    :NEW.IMAGE_TX := SI_Texture(si);
+ END IF;
+END;
 
 
 -- other Spatial  Tables we need. they are unrelated to rentals. we may need to add some user role who can CRUD them.

@@ -1,7 +1,5 @@
 package cz.vut.fit.pdbe.xnuriey00.model;
 
-public package cz.vut.fit.pdbe.xnuriey00.model;
-
 import java.sql.Date;
 
 public class PropertyImage {
@@ -26,6 +24,4 @@ public class PropertyImage {
     public String toString() {
         return imageName + " (" + uploadDate + ")";
     }
-} {
-    
 }

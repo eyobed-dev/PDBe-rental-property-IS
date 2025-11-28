@@ -1,6 +1,6 @@
 package cz.vut.fit.pdbe.xnuriey00.ui;
 
-import cz.vut.fit.pdbe.xnuriey00.dao.UserDAO;
+import cz.vut.fit.pdbe.xnuriey00.queries.UserQueries;
 import cz.vut.fit.pdbe.xnuriey00.model.User;
 import cz.vut.fit.pdbe.xnuriey00.util.DBConnection;
 
@@ -93,7 +93,7 @@ public class UserManagementWindow extends JFrame {
     private void loadData() {
         tableModel.setRowCount(0); // Clear table
         try (Connection conn = DBConnection.getConnection()) {
-            UserDAO dao = new UserDAO(conn);
+            UserQueries dao = new UserQueries(conn);
             List<User> users = dao.getAllUsers();
             for (User u : users) {
                 tableModel.addRow(new Object[]{u.getUserId(), u.getUsername(), u.getPasswordHash(), u.getUserType()});
@@ -105,7 +105,7 @@ public class UserManagementWindow extends JFrame {
 
     private void performAction(String action) {
         try (Connection conn = DBConnection.getConnection()) {
-            UserDAO dao = new UserDAO(conn);
+            UserQueries dao = new UserQueries(conn);
 
             String uName = txtUsername.getText();
             String uPass = txtPassword.getText();

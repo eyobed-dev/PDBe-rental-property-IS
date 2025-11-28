@@ -1,8 +1,10 @@
-
 package cz.vut.fit.pdbe.xnuriey00.ui;
 
 import cz.vut.fit.pdbe.xnuriey00.Main;
+import cz.vut.fit.pdbe.xnuriey00.queries.PropertyQueries;
+import cz.vut.fit.pdbe.xnuriey00.util.DBConnection;
 import cz.vut.fit.pdbe.xnuriey00.util.UserSession;
+import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -11,25 +13,40 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.sql.SQLException;
 
 public class MainWindow extends JFrame {
 
-
-
+    // UI Components needed for filtering
+    private JTextField searchField;
+    private JSlider priceSlider;
+    private JTable table;
+    private DefaultTableModel tableModel;
+    private MapPanel mapPanel;
 
     public MainWindow() {
         setTitle("Rental Property IS");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1400, 800);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout(10, 10));
         setBackground(Color.LIGHT_GRAY);
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                try {
+                    DBConnection.close();
+                } catch (SQLException sqlException) {
+                    sqlException.printStackTrace();
+                }
+            }
+        });
 
-        // 1. Header
+        // ==============================header===============================//
         add(createHeader(), BorderLayout.NORTH);
 
-        // 2. Main Content Container
+        // ==============================content==============================//
         JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
-        
 
         // Add the three main columns
         contentPanel.add(LeftControlPanel(), BorderLayout.WEST);
@@ -37,32 +54,32 @@ public class MainWindow extends JFrame {
         contentPanel.add(RightDetailPanel(), BorderLayout.EAST);
 
         add(contentPanel, BorderLayout.CENTER);
-        
+
+        add(contentPanel, BorderLayout.CENTER);
+
         setLocationRelativeTo(null);
+
+        // Initial Load
+        loadAllProperties();
     }
 
-
     private JPanel createHeader() {
-        
+
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(Color.WHITE);
-        header.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15)); // Top, left, bottom, right margin (like CSS margin)
-        
+        header.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
 
-        JLabel title = new JLabel("Rental Property IS");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        JLabel title = new JLabel("RENTAL PROPERTY IS");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
         title.setIcon(new ImageIcon(getClass().getClassLoader().getResource("logo.png")));
 
         JPanel buttonPanel = new JPanel(new FlowLayout());
         buttonPanel.setBackground(Color.WHITE);
 
+        JButton refreshBtn = new JButton("🔄 REFRESH");
+        JButton helpBtn = new JButton("❓ HELP");
+        JButton logoutBtn = new JButton("⏻ LOGOUT");
 
-        JButton refreshBtn = new JButton("REFRESH");
-        JButton helpBtn = new JButton("HELP");
-
-        JButton logoutBtn = new JButton("LOGOUT");
-
-        // HEADER ACTION LISTENERS
         refreshBtn.addActionListener(e -> System.out.println("Header: Refresh clicked"));
         helpBtn.addActionListener(e -> System.out.println("Header: Help clicked"));
         logoutBtn.addActionListener(e -> {
@@ -86,8 +103,6 @@ public class MainWindow extends JFrame {
         return header;
     }
 
-  
-
     // LEFT PANEL: Search, Slider, Table, Analysis
 
     private JPanel LeftControlPanel() {
@@ -95,21 +110,27 @@ public class MainWindow extends JFrame {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
         // Search Bar
-        JTextField searchField = new JTextField("Search");
+        searchField = new JTextField("Search");
         searchField.setMaximumSize(new Dimension(220, 26));
-        
+
         // SEARCH ACTION LISTENER
-        searchField.addActionListener(e -> System.out.println("Search: " + searchField.getText()));
+        searchField.addActionListener(e -> {
+            System.out.println("Search: " + searchField.getText());
+            refreshProperties();
+        });
 
         // Price Range Slider
         JLabel priceLabel = new JLabel("Price Range");
         priceLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JSlider priceSlider = new JSlider(0, 5000, 1500);
+        priceSlider = new JSlider(0, 5000, 5000); // Default to max
+        priceSlider.setMajorTickSpacing(1000);
+        priceSlider.setPaintTicks(true);
 
         // SLIDER ACTION LISTENER
         priceSlider.addChangeListener(e -> {
             if (!priceSlider.getValueIsAdjusting()) {
                 System.out.println("Price Adjusted: " + priceSlider.getValue());
+                refreshProperties();
             }
         });
 
@@ -118,7 +139,6 @@ public class MainWindow extends JFrame {
         JButton uploadImgBtn = new JButton("Upload Image");
 
         // BUTTON ACTION LISTENERS
-
 
         drawAreaBtn.setText("\uD83D\uDDFA️ Draw Area"); // 🗺️
         drawAreaBtn.setBackground(new Color(173, 216, 230)); // Light blue
@@ -151,14 +171,10 @@ public class MainWindow extends JFrame {
         searchControlsWrapper.add(multimediaPanel);
 
         // Results Table
-        String[] columns = {"Name", "Price", "Area", "Beds"};
-        Object[][] data = {
-            {"Sunset Hts", "$1,500", "358m²", "2"},
-            {"Maple View", "$1,500", "358m²", "2"},
-            {"City Loft", "$1,500", "358m²", "2"},
-            {"Bay Area", "$1,500", "358m²", "2"}
-        };
-        JTable table = new JTable(new DefaultTableModel(data, columns));
+        String[] columns = { "Name", "Price", "Area", "Beds" };
+        // Initialize with empty data
+        tableModel = new DefaultTableModel(new Object[0][0], columns);
+        table = new JTable(tableModel);
         table.setFillsViewportHeight(true);
         JScrollPane tableScroll = new JScrollPane(table);
         tableScroll.setPreferredSize(new Dimension(280, 150));
@@ -187,49 +203,37 @@ public class MainWindow extends JFrame {
         return panel;
     }
 
-
-
     // CENTER PANEL: Custom JMap Class
 
     private JPanel JMap() {
-        // Custom JPanel with paintComponent and needed methods
-        JPanel mapPanel = new JPanel();
+        // Use the new MapPanel
+        mapPanel = new MapPanel();
+        // Initial load is handled by refreshProperties() called in constructor
 
-        mapPanel.setBackground(new Color(220, 235, 220)); // Light greenish/map color
-        mapPanel.setBorder(new LineBorder(new Color(200, 200, 200), 1));
+        // Add Controls Overlay (Optional, or MapPanel can have them)
+        mapPanel.setLayout(null); // Absolute layout for overlay buttons
 
         // Zoom Controls
         JPanel zoomPanel = new JPanel(new GridLayout(2, 1, 0, 5));
-        zoomPanel.setBounds(10, 10, 40, 80); // Top Left
+        zoomPanel.setBounds(10, 10, 40, 80);
         JButton zoomIn = new JButton("+");
         JButton zoomOut = new JButton("-");
         zoomPanel.add(zoomIn);
         zoomPanel.add(zoomOut);
         mapPanel.add(zoomPanel);
 
-        // Add Button (Bottom Center)
+        // Add Button
         JButton addBtn = new JButton("Add");
-        addBtn.setForeground(Color.WHITE);
-        addBtn.setBounds(250, 650, 100, 40); // Approximate position
+        addBtn.setBounds(250, 650, 100, 40);
         mapPanel.add(addBtn);
 
-        // MAP ACTION LISTENERS
-        zoomIn.addActionListener(e -> System.out.println("Map: Zoom In"));
-        zoomOut.addActionListener(e -> System.out.println("Map: Zoom Out"));
-        addBtn.addActionListener(e -> System.out.println("Map: Add Property Clicked"));
-
-        // Mock Mouse Listener for clicking map
-        mapPanel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                System.out.println("Map Clicked at: " + e.getX() + ", " + e.getY());
-            }
-        });
+        // Link buttons to MapPanel logic (Need to expose methods in MapPanel or move
+        // buttons there)
+        // For now, let's just leave them as visual placeholders or basic triggers
 
         return mapPanel;
     }
 
- 
     // RIGHT PANEL: Details, Images, Calc
 
     private JPanel RightDetailPanel() {
@@ -260,37 +264,33 @@ public class MainWindow extends JFrame {
         JLabel buildingName = new JLabel("Sunset Heights - 4B");
         buildingName.setFont(new Font("Segoe UI", Font.BOLD, 18));
 
-        JTextArea detailsArea = new JTextArea(
-            "Price: $2,200/mo\n" +
-            "Address: 123 Maple Ave, Cityville\n" +
-            "Area: 358m²\n" +
-            "Neighborhood: Downtown\n" +
-            "No. of Bed: 2\n\n" +
-            "Description: Spacious unit with great views, modern amenities."
-        );
+        JTextArea detailsArea = new JTextArea("Price: $2,200/mo\n" + "Address: 123 Maple Ave, Cityville\n"
+                + "Area: 358m²\n" + "Neighborhood: Downtown\n" + "No. of Bed: 2\n\n"
+                + "Description: Spacious unit with great views, modern amenities.");
         detailsArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         detailsArea.setLineWrap(true);
         detailsArea.setWrapStyleWord(true);
         detailsArea.setEditable(false);
-        
 
         // --- MODIFIED SECTION: Nearby Calculator ---
         JPanel calcPanel = new JPanel(new GridBagLayout());
         calcPanel.setBorder(BorderFactory.createTitledBorder("Nearby Analysis"));
-        
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(2, 2, 2, 2);
 
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         calcPanel.add(new JLabel("Target Point:"), gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         JTextField targetField = new JTextField("Metro Station");
         calcPanel.add(targetField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         JButton calculateBtn = new JButton("Calculate Distances");
         calculateBtn.setBackground(new Color(220, 220, 220));
         calcPanel.add(calculateBtn, gbc);
@@ -331,5 +331,54 @@ public class MainWindow extends JFrame {
         panel.add(footer);
 
         return panel;
+    }
+
+    private void loadAllProperties() {
+        try (java.sql.Connection conn = DBConnection.getConnection()) {
+            PropertyQueries queries = new PropertyQueries(conn);
+            java.util.List<cz.vut.fit.pdbe.xnuriey00.model.Property> props = queries.getAllProperties();
+            updateView(props);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error loading properties: " + e.getMessage());
+        }
+    }
+
+    private void refreshProperties() {
+        String searchText = searchField.getText();
+        if (searchText.equals("Search"))
+            searchText = ""; // Handle default text
+
+        double maxPrice = (double) priceSlider.getValue();
+
+        try (java.sql.Connection conn = DBConnection.getConnection()) {
+            PropertyQueries queries = new PropertyQueries(conn);
+            java.util.List<cz.vut.fit.pdbe.xnuriey00.model.Property> props = queries.filterProperties(searchText,
+                    maxPrice);
+            updateView(props);
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error filtering properties: " + e.getMessage());
+        }
+    }
+
+    private void updateView(java.util.List<cz.vut.fit.pdbe.xnuriey00.model.Property> props) {
+        // Update Map
+        if (mapPanel != null) {
+            mapPanel.setProperties(props);
+        }
+
+        // Update Table
+        if (tableModel != null) {
+            tableModel.setRowCount(0); // Clear existing
+            for (cz.vut.fit.pdbe.xnuriey00.model.Property p : props) {
+                tableModel.addRow(new Object[] {
+                        p.getBuildingName(),
+                        "$" + p.getPrice(),
+                        p.getSquareMeters() + "m²",
+                        p.getNumBedrooms()
+                });
+            }
+        }
     }
 }

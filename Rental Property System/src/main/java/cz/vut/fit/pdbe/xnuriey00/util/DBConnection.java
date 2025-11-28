@@ -3,33 +3,31 @@ import oracle.jdbc.pool.OracleDataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+/**
+ *  https://rychly-edu.gitlab.io/dbs/spatial/oracle/#oracle-spatial-data-in-java
+ */
 public class DBConnection {
 
-    // The static reference that holds our configuration
     private static OracleDataSource ods = null;
-
-    /**
-     * Initializes the OracleDataSource.
-     * MUST be called once at application startup (in Main.java).
-     */
+    private static Connection conn;
+    
     public static void connect() throws SQLException {
-        // create a OracleDataSource instance
         ods = new OracleDataSource();
         String url = "jdbc:oracle:thin:@//gort.fit.vutbr.cz:1521/orclpdb";
         ods.setURL(url);
         ods.setUser("xnuriey00");
         ods.setPassword("I2Uwakow");
     }
-
-    /**
-     * Returns a new connection for a specific task (DAO operation).
-     */
-    public static Connection getConnection() throws SQLException {
-        if (ods == null) {
-            throw new SQLException("Database not initialized! Fail.");
+    public static void close() throws SQLException {
+        if(conn!=null) {
+            conn.close();
         }
-        Connection conn = ods.getConnection();
+    }
+    public static Connection getConnection() throws SQLException {
+        conn = ods.getConnection();
         conn.setAutoCommit(false);
         return conn;
     }
+    
+
 }

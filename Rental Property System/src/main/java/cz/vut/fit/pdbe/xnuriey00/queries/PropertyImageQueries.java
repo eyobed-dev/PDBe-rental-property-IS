@@ -32,9 +32,10 @@ public class PropertyImageQueries {
 
             String insertSql = "INSERT INTO PROPERTY_IMAGES (PROPERTY_ID, IMAGE_NAME, IMAGE_DATA) " +
                     "VALUES (?, ?, ordsys.ordimage.init())";
-            String[] returnCols = {"IMAGE_ID"};
+            String[] returnCols = { "IMAGE_ID" };
 
-            try (OraclePreparedStatement pstmt = (OraclePreparedStatement) connection.prepareStatement(insertSql, returnCols)) {
+            try (OraclePreparedStatement pstmt = (OraclePreparedStatement) connection.prepareStatement(insertSql,
+                    returnCols)) {
                 pstmt.setLong(1, propertyId);
                 pstmt.setString(2, imageName);
                 pstmt.executeUpdate();
@@ -46,7 +47,8 @@ public class PropertyImageQueries {
                 }
             }
 
-            if (newId == -1) throw new SQLException("Failed to generate Image ID");
+            if (newId == -1)
+                throw new SQLException("Failed to generate Image ID");
 
             String selectSql = "SELECT IMAGE_DATA FROM PROPERTY_IMAGES WHERE IMAGE_ID = ? FOR UPDATE";
 
@@ -61,7 +63,8 @@ public class PropertyImageQueries {
                         imgProxy.setProperties();
 
                         String updateSql = "UPDATE PROPERTY_IMAGES SET IMAGE_DATA = ? WHERE IMAGE_ID = ?";
-                        try (OraclePreparedStatement updateStmt = (OraclePreparedStatement) connection.prepareStatement(updateSql)) {
+                        try (OraclePreparedStatement updateStmt = (OraclePreparedStatement) connection
+                                .prepareStatement(updateSql)) {
                             updateStmt.setORAData(1, imgProxy);
                             updateStmt.setLong(2, newId);
                             updateStmt.executeUpdate();
@@ -69,7 +72,6 @@ public class PropertyImageQueries {
                     }
                 }
             }
-
 
             String updateSiSql = "UPDATE PROPERTY_IMAGES p SET " +
                     "p.IMAGE_SI = SI_StillImage(p.IMAGE_DATA.getContent()) " +
@@ -87,7 +89,8 @@ public class PropertyImageQueries {
                     "p.IMAGE_TX = SI_Texture(p.IMAGE_SI) " +
                     "WHERE IMAGE_ID = ?";
 
-            try (OraclePreparedStatement pstmt = (OraclePreparedStatement) connection.prepareStatement(updateFeaturesSql)) {
+            try (OraclePreparedStatement pstmt = (OraclePreparedStatement) connection
+                    .prepareStatement(updateFeaturesSql)) {
                 pstmt.setLong(1, newId);
                 pstmt.executeUpdate();
             }
@@ -102,6 +105,7 @@ public class PropertyImageQueries {
             throw e;
         }
     }
+
     /**
      * Retrieves the binary image data for display.
      */
@@ -137,5 +141,13 @@ public class PropertyImageQueries {
             }
         }
         return images;
+    }
+
+    public void deleteImage(Long imageId) throws SQLException {
+        String sql = "DELETE FROM PROPERTY_IMAGES WHERE IMAGE_ID = ?";
+        try (OraclePreparedStatement pstmt = (OraclePreparedStatement) connection.prepareStatement(sql)) {
+            pstmt.setLong(1, imageId);
+            pstmt.executeUpdate();
+        }
     }
 }

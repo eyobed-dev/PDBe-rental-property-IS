@@ -1,11 +1,18 @@
-package cz.vut.fit.pdbe.xnuriey00.ui.map;
+package cz.vut.fit.pdbe.xnuriey00.ui.map.layers;
+
+import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
 
-public class GridLayer implements MapLayer {
+public class GridLayer extends MapLayer {
+
+      public GridLayer() {
+            super("Grid");
+      }
+
       @Override
       public void render(Graphics2D g, MapPanel map) {
             double gridSpacing = 50.0;

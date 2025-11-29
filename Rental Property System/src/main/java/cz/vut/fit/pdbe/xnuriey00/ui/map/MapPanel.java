@@ -1,6 +1,8 @@
 package cz.vut.fit.pdbe.xnuriey00.ui.map;
 
-import cz.vut.fit.pdbe.xnuriey00.model.Property;
+import cz.vut.fit.pdbe.xnuriey00.model.*;
+import cz.vut.fit.pdbe.xnuriey00.ui.map.layers.*;
+import cz.vut.fit.pdbe.xnuriey00.ui.map.tools.*;
 import oracle.spatial.geometry.JGeometry;
 
 import javax.swing.*;
@@ -17,17 +19,24 @@ import java.util.List;
 
 public class MapPanel extends JPanel {
 
+    // Layers list
     private List<MapLayer> layers = new ArrayList<>();
+
+    // Current tool
     private MapTool currentTool;
 
-    // Specific Layers 
+    // UI Layers
     private GridLayer gridLayer;
+    private OverlayLayer overlayLayer;
+
+    // Data Layers
     private PropertyLayer propertyLayer;
-    // Overlay layer can be generic or specific
-    private List<MapOverlay> overlays = new ArrayList<>(); 
+    private SchoolLayer schoolLayer;
+    private TransitLayer transitLayer;
+    private CellularLayer cellularLayer;
 
     // Viewport State
-    private double scale = 10.0; 
+    private double scale = 10.0;
     private double offsetX = 0;
     private double offsetY = 0;
 
@@ -37,17 +46,27 @@ public class MapPanel extends JPanel {
 
         // Initialize Layers
         gridLayer = new GridLayer();
-        propertyLayer = new PropertyLayer();
+        overlayLayer = new OverlayLayer();
 
+        propertyLayer = new PropertyLayer();
+        schoolLayer = new SchoolLayer();
+        transitLayer = new TransitLayer();
+        cellularLayer = new CellularLayer();
+
+        // Add layers to the list
         layers.add(gridLayer);
+        layers.add(overlayLayer);
+
         layers.add(propertyLayer);
-        // Add overlay layer logic here or keep it simple for now
-        layers.add((g, map) -> drawOverlays(g));
+        layers.add(schoolLayer);
+        layers.add(transitLayer);
+        layers.add(cellularLayer);
 
         // Initialize Tool
         currentTool = new NavigationTool();
 
-        // Mouse Listeners
+        // Mouse Listeners for the tool to handle mouse events  
+        // The MapPanel forwards all mouse events to whichever tool is currently active
         MouseAdapter mouseHandler = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -91,18 +110,41 @@ public class MapPanel extends JPanel {
         addMouseWheelListener(mouseHandler);
     }
 
+    // Setters for the layers to update the data
     public void setProperties(List<Property> properties) {
         propertyLayer.setProperties(properties);
         repaint();
     }
 
-    public void addOverlay(JGeometry geometry, Color color, String label) {
-        overlays.add(new MapOverlay(geometry, color, label));
+    public void setSchools(List<SchoolCatchmentArea> schools) {
+        schoolLayer.setAreas(schools);
         repaint();
     }
 
+    public void setTransitStops(List<TransitStop> stops) {
+        transitLayer.setStops(stops);
+        repaint();
+    }
+
+    public void setCellularCoverage(List<CellularCoverage> coverages) {
+        cellularLayer.setCoverages(coverages);
+        repaint();
+    }
+
+    // Setters for the tool to update the current tool
+    public void setCurrentTool(MapTool tool) {
+        this.currentTool = tool;
+    }
+
+    // Setters for the overlay layer to update the overlay
+    public void addOverlay(JGeometry geometry, Color color, String label) {
+        overlayLayer.addOverlay(new MapOverlay(geometry, color, label));
+        repaint();
+    }
+
+    // Setters for the overlay layer to clear the overlay
     public void clearOverlays() {
-        overlays.clear();
+        overlayLayer.clearOverlays();
         repaint();
     }
 
@@ -132,10 +174,12 @@ public class MapPanel extends JPanel {
         return offsetY;
     }
 
+    // Paint the map that is its layers
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D graphics = (Graphics2D) g;
+        // Set antialiasing for smooth rendering
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         // Save the original transform
@@ -147,52 +191,22 @@ public class MapPanel extends JPanel {
 
         // Render Layers
         for (MapLayer layer : layers) {
-            layer.render(graphics, this);
+            if (layer.isVisible()) {
+                layer.render(graphics, this);
+            }
+        }
+
+        // Render Tool operations (if drawing is in progress)
+        if (currentTool != null) {
+            currentTool.render(graphics);
         }
 
         // Restore original transform
         graphics.setTransform(originalTransform);
     }
 
-    private void drawOverlays(Graphics2D graphics) {
-        // Draw Overlays
-        for (MapOverlay overlay : overlays) {
-            try {
-                Shape shape = jGeometryToShape(overlay.getGeometry());
+    // The following is copied from the solution during the labs
 
-                // Draw interior (semi-transparent)
-                Color c = overlay.getColor();
-                graphics.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), 100));
-                graphics.fill(shape);
-
-                // Draw boundary (solid)
-                graphics.setColor(c);
-                // Adjust stroke for zoom
-                float strokeWidth = (float) (2.0 / scale);
-                graphics.setStroke(new BasicStroke(strokeWidth));
-                graphics.draw(shape);
-
-                // Draw Label
-                if (overlay.getLabel() != null) {
-                    Rectangle2D bounds = shape.getBounds2D();
-                    double labelX = bounds.getCenterX();
-                    double labelY = bounds.getCenterY();
-
-                    Font font = new Font("SansSerif", Font.BOLD, 14);
-                    Font derivedFont = font.deriveFont((float) (14.0 / scale));
-                    graphics.setFont(derivedFont);
-                    graphics.setColor(Color.BLACK); // Label color
-                    graphics.drawString(overlay.getLabel(), (float) labelX, (float) labelY);
-                }
-
-            } catch (Exception e) {
-                System.err.println("Error drawing overlay: " + e.getMessage());
-            }
-        }
-    }
-
-    // =================The following is copied from the solution during the
-    // labs===========//
     /**
      * Create a rectangular "point" for a given point.
      *
@@ -201,7 +215,7 @@ public class MapPanel extends JPanel {
      *         dimensions
      */
     public Shape point2dToShape(Point2D point2D) {
-        // Fixed screen size (e.g., 10 pixels)
+        // Fixed screen size . looks good on my pc,
         double screenPixelSize = 10.0;
         double worldSize = screenPixelSize / scale;
         return new Rectangle2D.Double(point2D.getX() - (worldSize / 2), point2D.getY() - (worldSize / 2), worldSize,
@@ -232,7 +246,11 @@ public class MapPanel extends JPanel {
         }
     }
 
-    // Overlay Class (Keep it here for now)
+    public List<MapLayer> getLayers() {
+        return layers;
+    }
+
+    // Overlay Class (I keep it here for now)
     public static class MapOverlay {
         private JGeometry geometry;
         private Color color;

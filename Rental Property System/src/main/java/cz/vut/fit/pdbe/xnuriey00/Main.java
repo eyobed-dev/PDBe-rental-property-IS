@@ -1,14 +1,16 @@
 package cz.vut.fit.pdbe.xnuriey00;
 
-import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.FlatIntelliJLaf;
 import javax.swing.*;
+import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import cz.vut.fit.pdbe.xnuriey00.ui.*;
 import cz.vut.fit.pdbe.xnuriey00.util.*;
 import java.sql.SQLException;
 
 public class Main {
     public static void main(String[] args) throws Exception{
-        FlatLightLaf.setup();
+        FlatIntelliJLaf.setup();
+        //UIManager.setLookAndFeel(new NimbusLookAndFeel());  
         try {
             DBConnection.connect();
         } catch (SQLException e) {

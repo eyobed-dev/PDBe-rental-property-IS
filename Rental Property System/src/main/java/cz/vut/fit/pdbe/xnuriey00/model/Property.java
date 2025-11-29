@@ -14,7 +14,8 @@ public class Property {
     private Long listingUserId;
     private JGeometry jGeometry;
 
-    public Property(Long propertyId, String buildingName, String address, String unitNumber, Double price, Integer numBedrooms, Double squareMeters, String description, Long listingUserId, JGeometry jGeometry) {
+    public Property(Long propertyId, String buildingName, String address, String unitNumber, Double price,
+            Integer numBedrooms, Double squareMeters, String description, Long listingUserId, JGeometry jGeometry) {
         this.propertyId = propertyId;
         this.buildingName = buildingName;
         this.address = address;
@@ -25,6 +26,9 @@ public class Property {
         this.description = description;
         this.listingUserId = listingUserId;
         this.jGeometry = jGeometry;
+    }
+
+    public Property() {
     }
 
     // Getters
@@ -71,6 +75,38 @@ public class Property {
     // Setters
     public void setPropertyId(Long propertyId) {
         this.propertyId = propertyId;
+    }
+
+    public void setBuildingName(String buildingName) {
+        this.buildingName = buildingName;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public void setUnitNumber(String unitNumber) {
+        this.unitNumber = unitNumber;
+    }
+
+    public void setPrice(Double price) {
+        this.price = price;
+    }
+
+    public void setNumBedrooms(Integer numBedrooms) {
+        this.numBedrooms = numBedrooms;
+    }
+
+    public void setSquareMeters(Double squareMeters) {
+        this.squareMeters = squareMeters;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setListingUserId(Long listingUserId) {
+        this.listingUserId = listingUserId;
     }
 
     public void setJGeometry(JGeometry jGeometry) {

@@ -1,7 +1,8 @@
-package cz.vut.fit.pdbe.xnuriey00.ui.map;
+package cz.vut.fit.pdbe.xnuriey00.ui.map.tools;
+
+import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
 
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
 
 public class NavigationTool implements MapTool {
       private int lastMouseX;
@@ -29,17 +30,7 @@ public class NavigationTool implements MapTool {
 
       @Override
       public void onMouseClicked(MouseEvent e, MapPanel map) {
-            // Optional: Click to center or select
-      }
-
-      @Override
-      public void onMouseWheelMoved(MouseWheelEvent e, MapPanel map) {
-            if (e.getWheelRotation() < 0) {
-                  map.zoomIn();
-            } else {
-                  map.zoomOut();
-            }
-            map.repaint();
+            // probably select the property. ignore for now
       }
 
       @Override

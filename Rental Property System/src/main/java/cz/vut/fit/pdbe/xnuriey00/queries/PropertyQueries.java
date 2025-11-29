@@ -44,7 +44,6 @@ public class PropertyQueries {
             pstmt.setString(7, prop.getDescription());
             pstmt.setLong(8, prop.getListingUserId());
 
-      
             STRUCT obj = JGeometry.store(prop.getJGeometry(), connection);
             pstmt.setObject(9, obj);
 
@@ -249,5 +248,46 @@ public class PropertyQueries {
             connection.rollback();
             throw e;
         }
+    }
+
+    public List<Property> getPropertiesIntersecting(JGeometry area) throws SQLException {
+        List<Property> properties = new ArrayList<>();
+        String sql = "SELECT p.PROPERTY_ID, p.BUILDING_NAME, p.ADDRESS, p.UNIT_NUMBER, p.PRICE, " +
+                "p.NUM_BEDROOMS, p.SQUARE_METERS, p.DESCRIPTION, p.LISTING_USER_ID, " +
+                "p.GEOMETRY as GEO_STRUCT " +
+                "FROM PROPERTIES p WHERE SDO_RELATE(p.GEOMETRY, ?, 'mask=ANYINTERACT') = 'TRUE'";
+
+        try (OraclePreparedStatement pstmt = (OraclePreparedStatement) connection.prepareStatement(sql)) {
+            // Convert JGeometry to STRUCT
+            STRUCT struct = JGeometry.store(area, connection);
+            pstmt.setOracleObject(1, struct);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    properties.add(mapResultSetToProperty(rs));
+                }
+            }
+        }
+        return properties;
+    }
+
+    private Property mapResultSetToProperty(ResultSet rs) throws SQLException {
+        STRUCT struct = (STRUCT) rs.getObject("GEO_STRUCT");
+        JGeometry jGeom = null;
+        if (struct != null) {
+            jGeom = JGeometry.load(struct);
+        }
+
+        return new Property(
+                rs.getLong("PROPERTY_ID"),
+                rs.getString("BUILDING_NAME"),
+                rs.getString("ADDRESS"),
+                rs.getString("UNIT_NUMBER"),
+                rs.getDouble("PRICE"),
+                rs.getObject("NUM_BEDROOMS") != null ? rs.getInt("NUM_BEDROOMS") : null,
+                rs.getObject("SQUARE_METERS") != null ? rs.getDouble("SQUARE_METERS") : null,
+                rs.getString("DESCRIPTION"),
+                rs.getLong("LISTING_USER_ID"),
+                jGeom);
     }
 }

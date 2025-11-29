@@ -1,14 +1,19 @@
-package cz.vut.fit.pdbe.xnuriey00.ui.map;
+package cz.vut.fit.pdbe.xnuriey00.ui.map.layers;
 
 import cz.vut.fit.pdbe.xnuriey00.model.Property;
+import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
 import oracle.spatial.geometry.JGeometry;
 
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
-public class PropertyLayer implements MapLayer {
+public class PropertyLayer extends MapLayer {
       private List<Property> properties;
+
+      public PropertyLayer() {
+            super("Properties");
+      }
 
       public void setProperties(List<Property> properties) {
             this.properties = properties;

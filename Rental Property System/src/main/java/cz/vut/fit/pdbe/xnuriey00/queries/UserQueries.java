@@ -19,7 +19,7 @@ public class UserQueries {
 
     public void createUser(User user) throws SQLException {
         String sql = "INSERT INTO USERS (USERNAME, PASSWORD_HASH, USER_TYPE) VALUES (?, ?, ?)";
-        // oracle does not return normal id like mysql so to get user id i found out i
+        // oracle does not return normal id like mysql so to get user id i find out i
         // need to pass the column to prepare statement
         // prevent sql injection
         String[] returnCols = { "USER_ID" };

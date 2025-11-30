@@ -1,17 +1,8 @@
 package cz.vut.fit.pdbe.xnuriey00.ui;
 
 import cz.vut.fit.pdbe.xnuriey00.Main;
-import cz.vut.fit.pdbe.xnuriey00.model.Cellular;
-import cz.vut.fit.pdbe.xnuriey00.model.Property;
-import cz.vut.fit.pdbe.xnuriey00.model.School;
-import cz.vut.fit.pdbe.xnuriey00.model.Transit;
-import cz.vut.fit.pdbe.xnuriey00.queries.CellularQueries;
-import cz.vut.fit.pdbe.xnuriey00.queries.PropertyQueries;
-import cz.vut.fit.pdbe.xnuriey00.queries.PropertyImageQueries;
-
-import cz.vut.fit.pdbe.xnuriey00.queries.SchoolQueries;
-import cz.vut.fit.pdbe.xnuriey00.queries.TransitQueries;
-import cz.vut.fit.pdbe.xnuriey00.model.PropertyImage;
+import cz.vut.fit.pdbe.xnuriey00.model.*;
+import cz.vut.fit.pdbe.xnuriey00.queries.*;
 import cz.vut.fit.pdbe.xnuriey00.ui.map.MapControlPanel;
 import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
 import cz.vut.fit.pdbe.xnuriey00.ui.map.tools.DrawSettingsPanel;
@@ -22,9 +13,7 @@ import cz.vut.fit.pdbe.xnuriey00.util.UserSession;
 import oracle.spatial.geometry.JGeometry;
 
 import javax.swing.*;
-import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.EtchedBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -35,7 +24,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * The main application window 
+ * The main application window
  */
 public class MainWindow extends JFrame {
 
@@ -44,12 +33,13 @@ public class MainWindow extends JFrame {
     private JTable table; // Table to display search results.
     private DefaultTableModel tableModel; // The data model backing the results table.
 
-    private MapPanel mapPanel; // The custom panel responsible for rendering the map and handling spatial tools. Inside ./map
+    private MapPanel mapPanel; // The custom panel responsible for rendering the map and handling spatial
+                               // tools. Inside ./map
 
     // Right Panel Components
     private JTextField nameField, addressField, priceField, bedsField, areaField;
     private JTextArea descArea;
-    private JButton editBtn, deleteBtn, saveBtn, cancelBtn, createBtn;
+    private JButton editBtn, deleteBtn, saveBtn, cancelBtn, createBtn, redrawBtn;
 
     // Image Carousel Components
     private JLabel imageLabel;
@@ -60,10 +50,11 @@ public class MainWindow extends JFrame {
     // Draw Settings
     private DrawSettingsPanel drawSettingsPanel;
 
-   //Cache of all currently loaded properties to avoid constant DB fetching for details.
+    // Cache of all currently loaded properties to avoid constant DB fetching for
+    // details.
     private List<Property> allProperties;
 
-    //The property currently selected or being edited.
+    // The property currently selected or being edited.
     private Property currentProperty;
 
     // Temporary storage for geometry drawn on the map during property creation.
@@ -112,9 +103,9 @@ public class MainWindow extends JFrame {
         loadEverything();
     }
 
-
     /**
      * Creates the top header panel containing the logo, title, and system buttons.
+     * 
      * @return A constructed JPanel for the header.
      */
     private JPanel createHeader() {
@@ -162,10 +153,11 @@ public class MainWindow extends JFrame {
 
     /**
      * Creates the left-side control panel containing search tools and results list.
+     * 
      * @return A constructed JPanel for the left sidebar.
      */
     private JPanel createLeftControlPanel() {
-        //Main Layout
+        // Main Layout
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         panel.setPreferredSize(new Dimension(300, getHeight()));
@@ -173,7 +165,7 @@ public class MainWindow extends JFrame {
         JPanel controlsWrapper = new JPanel();
         controlsWrapper.setLayout(new BoxLayout(controlsWrapper, BoxLayout.Y_AXIS));
 
-        //Relational Search Panel
+        // Relational Search Panel
         JPanel relPanel = new JPanel(new GridLayout(0, 1, 5, 5));
         relPanel.setBorder(BorderFactory.createTitledBorder("Relational Search"));
 
@@ -186,7 +178,8 @@ public class MainWindow extends JFrame {
         priceSlider.setPaintTicks(true);
         priceSlider.addChangeListener(e -> {
             priceLabel.setText("Price Limit: $" + priceSlider.getValue());
-            if (!priceSlider.getValueIsAdjusting()) filterProperties();
+            if (!priceSlider.getValueIsAdjusting())
+                filterProperties();
         });
 
         relPanel.add(searchField);
@@ -208,7 +201,7 @@ public class MainWindow extends JFrame {
         });
         spatPanel.add(drawBtn);
 
-        //Multimedia Search Pane
+        // Multimedia Search Pane
         JPanel mediaPanel = new JPanel(new GridLayout(1, 1));
         mediaPanel.setBorder(BorderFactory.createTitledBorder("Multimedia Search"));
 
@@ -217,14 +210,15 @@ public class MainWindow extends JFrame {
         imgBtn.addActionListener(e -> System.out.println("Action: Upload Image"));
         mediaPanel.add(imgBtn);
 
-        //  Reset Button
+        // Reset Button
         JButton resetBtn = new JButton("Reset Filters");
         // Fix width to match panels using setMaximumSize in BoxLayout
         resetBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
         resetBtn.addActionListener(e -> {
-            mapPanel.clearOverlays();
             searchField.setText("Search");
             priceSlider.setValue(5000);
+            mapPanel.clearOverlays();
+            clearFields();
             loadEverything();
         });
 
@@ -259,8 +253,10 @@ public class MainWindow extends JFrame {
 
         return panel;
     }
+
     /**
      * Creates the center panel containing the map and its controls.
+     * 
      * @return A constructed JPanel for the map.
      */
     private JPanel createCenterMapPanel() {
@@ -272,12 +268,12 @@ public class MainWindow extends JFrame {
         JPanel bottomPanel = new JPanel(new BorderLayout());
 
         MapControlPanel controlPanel = new MapControlPanel(mapPanel);
-        bottomPanel.add(controlPanel,BorderLayout.EAST);
+        bottomPanel.add(controlPanel, BorderLayout.EAST);
 
         // Draw Settings (Initially Hidden)
         drawSettingsPanel = new DrawSettingsPanel();
         drawSettingsPanel.setVisible(false);
-        bottomPanel.add(drawSettingsPanel,BorderLayout.WEST);
+        bottomPanel.add(drawSettingsPanel, BorderLayout.WEST);
 
         mapContainer.add(bottomPanel, BorderLayout.SOUTH);
 
@@ -286,107 +282,127 @@ public class MainWindow extends JFrame {
 
     /**
      * Creates the right-side details panel for viewing and editing properties.
+     * 
      * @return A constructed JPanel for details.
      */
     private JPanel createRightDetailPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setPreferredSize(new Dimension(320, 0));
-        panel.setBorder(new EmptyBorder(15, 15, 15, 15));
+    //Main Container
+    JPanel panel = new JPanel(new BorderLayout(0, 15));
+    panel.setPreferredSize(new Dimension(320, 0));
+    panel.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        // "Create New" Button
-        createBtn = new JButton("➕ Create New Property");
-        createBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-        createBtn.setBackground(new Color(144, 238, 144)); // Light green
-        createBtn.addActionListener(e -> initiateCreateFlow());
+    //Top Section
+    JPanel topSection = new JPanel();
+    topSection.setLayout(new BoxLayout(topSection, BoxLayout.Y_AXIS));
+    
+    createBtn = new JButton("➕ Create New Property");
+    createBtn.setBackground(new Color(144, 238, 144));
+    createBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+    createBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35)); // Full width
+    createBtn.addActionListener(e -> initiateCreateFlow());
 
-        panel.add(createBtn);
-        panel.add(Box.createVerticalStrut(10));
+    // Image Container
+    JPanel imgContainer = new JPanel(new BorderLayout());
+    imgContainer.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+    imgContainer.setPreferredSize(new Dimension(280, 180)); // Fixed aspect ratio
+    imageLabel = new JLabel("No Image", SwingConstants.CENTER);
+    imgContainer.add(imageLabel, BorderLayout.CENTER);
 
-        // --- Image Carousel ---
-        JPanel imgPanel = new JPanel(new BorderLayout());
-        imgPanel.setPreferredSize(new Dimension(280, 200));
-        imgPanel.setMaximumSize(new Dimension(280, 200));
-        imgPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-
-        imageLabel = new JLabel("No Image", SwingConstants.CENTER);
-        imgPanel.add(imageLabel, BorderLayout.CENTER);
-
-        // Image Controls
-        JPanel imgControls = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-        prevImgBtn = new JButton("<");
-        nextImgBtn = new JButton(">");
-        addImgBtn = new JButton("+");
-        deleteImgBtn = new JButton("🗑");
-
-        prevImgBtn.addActionListener(e -> navigateImage(-1));
-        nextImgBtn.addActionListener(e -> navigateImage(1));
-        addImgBtn.addActionListener(e -> addImage());
-        deleteImgBtn.addActionListener(e -> deleteImage());
-
-        imgControls.add(prevImgBtn);
-        imgControls.add(addImgBtn);
-        imgControls.add(deleteImgBtn);
-        imgControls.add(nextImgBtn);
-
-        panel.add(imgPanel);
-        panel.add(imgControls);
-        panel.add(Box.createVerticalStrut(10));
-        // ----------------------
-
-        // Property Data Fields
-        nameField = createLabeledField(panel, "Building Name:");
-        addressField = createLabeledField(panel, "Address:");
-        priceField = createLabeledField(panel, "Price:");
-        bedsField = createLabeledField(panel, "Bedrooms:");
-        areaField = createLabeledField(panel, "Area (m²):");
-
-        panel.add(new JLabel("Description:"));
-        descArea = new JTextArea(5, 20);
-        descArea.setLineWrap(true);
-        descArea.setWrapStyleWord(true);
-        JScrollPane descScroll = new JScrollPane(descArea);
-        panel.add(descScroll);
-        panel.add(Box.createVerticalStrut(10));
-
-        // Action Buttons
-        JPanel btnPanel = new JPanel(new FlowLayout());
-        editBtn = new JButton("Edit");
-        deleteBtn = new JButton("Delete");
-        saveBtn = new JButton("Save");
-        cancelBtn = new JButton("Cancel");
-
-        deleteBtn.setForeground(Color.RED);
-        saveBtn.setBackground(Color.GREEN);
-
-        btnPanel.add(editBtn);
-        btnPanel.add(deleteBtn);
-        btnPanel.add(saveBtn);
-        btnPanel.add(cancelBtn);
-        panel.add(btnPanel);
-
-        // Action Listeners
-        editBtn.addActionListener(e -> setEditMode(true));
-
-        cancelBtn.addActionListener(e -> {
-            setEditMode(false);
-            // Revert changes or clear if creating new
-            if (currentProperty != null) {
-                populateDetails(currentProperty);
-            } else {
-                clearFields();
-            }
-        });
-
-        saveBtn.addActionListener(e -> saveProperty());
-        deleteBtn.addActionListener(e -> deleteProperty());
-
-        // Initialize in read-only mode
-        setEditMode(false);
-        return panel;
+    // Image Controls
+    JPanel imgNav = new JPanel(new GridLayout(1, 4, 2, 0));
+    prevImgBtn = new JButton("◀");
+    addImgBtn = new JButton("➕");
+    deleteImgBtn = new JButton("🗑");
+    nextImgBtn = new JButton("▶");
+    
+    // Compact formatting for controls
+    for (JButton b : new JButton[]{prevImgBtn, addImgBtn, deleteImgBtn, nextImgBtn}) {
+        b.setMargin(new Insets(2, 2, 2, 2)); // Minimal padding
+        imgNav.add(b);
     }
 
+    prevImgBtn.addActionListener(e -> navigateImage(-1));
+    nextImgBtn.addActionListener(e -> navigateImage(1));
+    addImgBtn.addActionListener(e -> addImage());
+    deleteImgBtn.addActionListener(e -> deleteImage());
 
+    topSection.add(createBtn);
+    topSection.add(Box.createVerticalStrut(10));
+    topSection.add(imgContainer);
+    topSection.add(imgNav); // Nav bar sits flush under image
+
+    //Center Section: Data Form
+    JPanel formPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // 2 Cols, 10px gaps
+    
+    // Inline field initialization 
+    nameField = new JTextField();
+    addressField = new JTextField();
+    priceField = new JTextField();
+    bedsField = new JTextField();
+    areaField = new JTextField();
+
+    // Add pairs to grid
+    formPanel.add(new JLabel("Building Name:")); formPanel.add(nameField);
+    formPanel.add(new JLabel("Address:"));       formPanel.add(addressField);
+    formPanel.add(new JLabel("Price (CZK):"));     formPanel.add(priceField);
+    formPanel.add(new JLabel("Bedrooms:"));      formPanel.add(bedsField);
+    formPanel.add(new JLabel("Area (m²):"));     formPanel.add(areaField);
+
+    // Description 
+    JPanel centerWrapper = new JPanel(new BorderLayout(0, 5));
+    centerWrapper.add(formPanel, BorderLayout.NORTH);
+    
+    descArea = new JTextArea(4, 20);
+    descArea.setLineWrap(true);
+    descArea.setWrapStyleWord(true);
+    JScrollPane descScroll = new JScrollPane(descArea);
+    descScroll.setBorder(BorderFactory.createTitledBorder("Description"));
+    centerWrapper.add(descScroll, BorderLayout.CENTER);
+
+    //Bottom Section: Actions
+    JPanel actionWrapper = new JPanel(new GridLayout(2, 1, 0, 5));
+    
+    JPanel editRow = new JPanel(new GridLayout(1, 3, 5, 0));
+    editBtn = new JButton("Edit");
+    redrawBtn = new JButton("Redraw"); // Icon removed for space
+    deleteBtn = new JButton("Delete");
+    deleteBtn.setForeground(Color.RED);
+    
+    editRow.add(editBtn);
+    editRow.add(redrawBtn);
+    editRow.add(deleteBtn);
+
+    JPanel saveRow = new JPanel(new GridLayout(1, 2, 5, 0));
+    saveBtn = new JButton("Save");
+    cancelBtn = new JButton("Cancel");
+    saveBtn.setBackground(new Color(144, 238, 144));
+    
+    saveRow.add(saveBtn);
+    saveRow.add(cancelBtn);
+
+    actionWrapper.add(editRow);
+    actionWrapper.add(saveRow);
+
+    //Listeners
+    redrawBtn.setVisible(false);
+    redrawBtn.addActionListener(e -> initiateRedrawFlow());
+    editBtn.addActionListener(e -> setEditMode(true));
+    saveBtn.addActionListener(e -> saveProperty());
+    deleteBtn.addActionListener(e -> deleteProperty());
+    cancelBtn.addActionListener(e -> {
+        setEditMode(false);
+        if (currentProperty != null) populateDetails(currentProperty);
+        else clearFields();
+    });
+
+    //Final 
+    panel.add(topSection, BorderLayout.NORTH);
+    panel.add(centerWrapper, BorderLayout.CENTER);
+    panel.add(actionWrapper, BorderLayout.SOUTH);
+
+    setEditMode(false);
+    return panel;
+}
     /**
      * Initiates the workflow for creating a new property.
      * Steps:
@@ -401,7 +417,8 @@ public class MainWindow extends JFrame {
         clearFields();
         setEditMode(true);
 
-        JOptionPane.showMessageDialog(this, "Step 1: Draw the property area on the map.");
+        JOptionPane.showMessageDialog(this,
+                "Draw the property area on the map. You can use the panel below to select appropriate geometry");
 
         if (mapPanel != null) {
             drawSettingsPanel.setVisible(true);
@@ -411,14 +428,32 @@ public class MainWindow extends JFrame {
                 mapPanel.clearOverlays();
                 mapPanel.addOverlay(geometry, new Color(0, 255, 0, 100), "New Property");
                 mapPanel.setCurrentTool(new NavigationTool());
-                JOptionPane.showMessageDialog(this, "Area captured! Now fill in the details and click Save.");
+                JOptionPane.showMessageDialog(this, "Area captured. Next fill in the details and click Save.");
+            }));
+        }
+    }
+
+    private void initiateRedrawFlow() {
+        if (currentProperty == null)
+            return;
+
+        JOptionPane.showMessageDialog(this, "Draw the new property area on the map.");
+
+        if (mapPanel != null) {
+            drawSettingsPanel.setVisible(true);
+            mapPanel.setCurrentTool(new DrawTool(drawSettingsPanel, geometry -> {
+                this.tempGeometry = geometry;
+                drawSettingsPanel.setVisible(false);
+                mapPanel.clearOverlays();
+                mapPanel.addOverlay(geometry, new Color(0, 255, 0, 100), "New Area");
+                mapPanel.setCurrentTool(new NavigationTool());
+                JOptionPane.showMessageDialog(this, "New area captured! Click Save to apply changes.");
             }));
         }
     }
 
     /**
      * Saves the property data to the database.
-     * <p>
      * This method handles both creating new properties (INSERT) and updating
      * existing ones (UPDATE).
      * It validates input, constructs the {@link Property} object, and calls the
@@ -426,13 +461,13 @@ public class MainWindow extends JFrame {
      */
     private void saveProperty() {
         try {
-            // 1. Validation
+            // Validation
             if (nameField.getText().isEmpty() || priceField.getText().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Name and Price are required!");
                 return;
             }
 
-            // 2. Object Construction from Form Data
+            // Object Construction from Form Data
             Property p = new Property();
             p.setBuildingName(nameField.getText());
             p.setAddress(addressField.getText());
@@ -445,9 +480,13 @@ public class MainWindow extends JFrame {
                 p.setSquareMeters(Double.parseDouble(areaField.getText()));
             }
             p.setDescription(descArea.getText());
-            p.setListingUserId(1L); // Hardcoded default user for this implementation
+            Long currentUserId = null;
+            if (UserSession.getInstance().getCurrentUser() != null) {
+                currentUserId = UserSession.getInstance().getCurrentUser().getUserId();
+            }
+            p.setListingUserId(currentUserId != null ? currentUserId : 1L);
 
-            // 3. Database Interaction
+            // Database Interaction
             try (Connection conn = DBConnection.getConnection()) {
                 PropertyQueries queries = new PropertyQueries(conn);
 
@@ -464,7 +503,14 @@ public class MainWindow extends JFrame {
                 } else {
                     // --- UPDATE LOGIC ---
                     p.setPropertyId(currentProperty.getPropertyId());
-                    p.setJGeometry(currentProperty.getJGeometry()); // Preserve existing location
+
+                    // Use new geometry if drawn, otherwise keep old
+                    if (tempGeometry != null) {
+                        p.setJGeometry(tempGeometry);
+                    } else {
+                        p.setJGeometry(currentProperty.getJGeometry());
+                    }
+
                     p.setUnitNumber(currentProperty.getUnitNumber());
                     queries.updateProperty(p);
                     JOptionPane.showMessageDialog(this, "Property Updated!");
@@ -566,7 +612,8 @@ public class MainWindow extends JFrame {
             JOptionPane.showMessageDialog(this, "Error filtering properties: " + e.getMessage());
         }
     }
- private void filterPropertiesByGeometry(JGeometry geometry) {
+
+    private void filterPropertiesByGeometry(JGeometry geometry) {
         drawSettingsPanel.setVisible(false);
 
         // 1. Run Query
@@ -629,6 +676,7 @@ public class MainWindow extends JFrame {
      */
     private void populateDetails(Property p) {
         this.currentProperty = p;
+        this.tempGeometry = null; // Reset temp geometry
         isCreating = false;
 
         // Fill Text Fields
@@ -768,6 +816,8 @@ public class MainWindow extends JFrame {
         deleteBtn.setVisible(!editable);
         createBtn.setVisible(!editable);
 
+        redrawBtn.setVisible(editable && !isCreating); // Only show when editing existing
+
         saveBtn.setVisible(editable);
         cancelBtn.setVisible(editable);
     }
@@ -784,19 +834,4 @@ public class MainWindow extends JFrame {
         descArea.setText("");
     }
 
-    /**
-     * Utility to create a labelled text field and add it to a panel.
-     *
-     * @param panel The parent panel.
-     * @param label The text label.
-     * @return The created JTextField.
-     */
-    private JTextField createLabeledField(JPanel panel, String label) {
-        panel.add(new JLabel(label));
-        JTextField field = new JTextField();
-        // Limit height to prevent ugly stretching in BoxLayout
-        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
-        panel.add(field);
-        return field;
-    }
 }

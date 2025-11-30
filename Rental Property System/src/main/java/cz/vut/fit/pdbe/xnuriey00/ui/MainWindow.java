@@ -1,10 +1,10 @@
 package cz.vut.fit.pdbe.xnuriey00.ui;
 
 import cz.vut.fit.pdbe.xnuriey00.Main;
-import cz.vut.fit.pdbe.xnuriey00.model.CellularCoverage;
+import cz.vut.fit.pdbe.xnuriey00.model.Cellular;
 import cz.vut.fit.pdbe.xnuriey00.model.Property;
-import cz.vut.fit.pdbe.xnuriey00.model.SchoolCatchmentArea;
-import cz.vut.fit.pdbe.xnuriey00.model.TransitStop;
+import cz.vut.fit.pdbe.xnuriey00.model.School;
+import cz.vut.fit.pdbe.xnuriey00.model.Transit;
 import cz.vut.fit.pdbe.xnuriey00.queries.CellularQueries;
 import cz.vut.fit.pdbe.xnuriey00.queries.PropertyQueries;
 import cz.vut.fit.pdbe.xnuriey00.queries.PropertyImageQueries;
@@ -115,7 +115,6 @@ public class MainWindow extends JFrame {
 
     /**
      * Creates the top header panel containing the logo, title, and system buttons.
-     *
      * @return A constructed JPanel for the header.
      */
     private JPanel createHeader() {
@@ -124,7 +123,7 @@ public class MainWindow extends JFrame {
 
         // Title and Logo
         JLabel title = new JLabel("RENTAL PROPERTY IS");
-        title.setFont(new Font("Ubuntu", Font.BOLD, 28));
+        title.setFont(new Font(null, Font.BOLD, 28));
         title.setIcon(new ImageIcon(getClass().getClassLoader().getResource("logo.png")));
 
         // Button Container
@@ -163,118 +162,105 @@ public class MainWindow extends JFrame {
 
     /**
      * Creates the left-side control panel containing search tools and results list.
-     *
      * @return A constructed JPanel for the left sidebar.
      */
     private JPanel createLeftControlPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        //Main Layout
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         panel.setPreferredSize(new Dimension(300, getHeight()));
 
-        // 1. Text Search Field
-        searchField = new JTextField("Search properties...");
-        searchField.setMaximumSize(new Dimension(450, 26)); //unless specified, this looks ugly
-        searchField.addActionListener(e -> filterProperties()); //  DB filter
+        JPanel controlsWrapper = new JPanel();
+        controlsWrapper.setLayout(new BoxLayout(controlsWrapper, BoxLayout.Y_AXIS));
 
-        // 2. Price Slider
-        JLabel priceLabel = new JLabel("Price Range");
-        priceSlider = new JSlider(0, 5000, 5000); // Range 0 to 5000 $
-        priceSlider.setMajorTickSpacing(500); //By 500$
+        //Relational Search Panel
+        JPanel relPanel = new JPanel(new GridLayout(0, 1, 5, 5));
+        relPanel.setBorder(BorderFactory.createTitledBorder("Relational Search"));
+
+        searchField = new JTextField("Search");
+        searchField.addActionListener(e -> filterProperties());
+
+        JLabel priceLabel = new JLabel("Price Limit: $5000");
+        priceSlider = new JSlider(0, 5000, 5000);
+        priceSlider.setMajorTickSpacing(1000);
         priceSlider.setPaintTicks(true);
         priceSlider.addChangeListener(e -> {
-            // Only update when the user releases the slider otherwise it causes overload
-            if (!priceSlider.getValueIsAdjusting()) {
-                filterProperties();
-            }
+            priceLabel.setText("Price Limit: $" + priceSlider.getValue());
+            if (!priceSlider.getValueIsAdjusting()) filterProperties();
         });
 
-        // 3. Spatial Search Button (Draw Area)
-        JButton drawAreaBtn = new JButton("\uD83D\uDDFA️ Draw Area");
-        drawAreaBtn.setBackground(new Color(144, 229, 255));
+        relPanel.add(searchField);
+        relPanel.add(priceLabel);
+        relPanel.add(priceSlider);
 
-        // Logic for Spatial Search
-        drawAreaBtn.addActionListener(e -> {
+        // spatial Search Panel
+        JPanel spatPanel = new JPanel(new GridLayout(1, 1)); // Single cell grid for full expansion
+        spatPanel.setBorder(BorderFactory.createTitledBorder("Spatial Search"));
+
+        JButton drawBtn = new JButton("\uD83D\uDDFA\uFE0F Draw Area");
+        drawBtn.setBackground(new Color(144, 229, 255));
+        drawBtn.addActionListener(e -> {
             if (mapPanel != null) {
-                drawSettingsPanel.setVisible(true);  //Initiate the drawing tool
-                mapPanel.setCurrentTool(new DrawTool(drawSettingsPanel, geometry -> {
-                    filterPropertiesByGeometry(geometry);
-                }));
-                JOptionPane.showMessageDialog(this, "Draw a polygon/circle on the map. Use settings panel for type. The database will return list of all properties inside");
+                drawSettingsPanel.setVisible(true);
+                mapPanel.setCurrentTool(new DrawTool(drawSettingsPanel, this::filterPropertiesByGeometry));
+                JOptionPane.showMessageDialog(this, "Draw a polygon/circle on the map.");
             }
         });
+        spatPanel.add(drawBtn);
 
-        // 4. Multimedia Search
-        JButton uploadImgBtn = new JButton("\uD83D\uDDBC️ Upload Image");
-        uploadImgBtn.setBackground(new Color(251, 207, 207));
+        //Multimedia Search Pane
+        JPanel mediaPanel = new JPanel(new GridLayout(1, 1));
+        mediaPanel.setBorder(BorderFactory.createTitledBorder("Multimedia Search"));
 
-        // Logic for multimedia search
-        uploadImgBtn.addActionListener(e -> System.out.println("Action: Upload Image"));
+        JButton imgBtn = new JButton("\uD83D\uDDBC\uFE0F Upload Image");
+        imgBtn.setBackground(new Color(251, 207, 207));
+        imgBtn.addActionListener(e -> System.out.println("Action: Upload Image"));
+        mediaPanel.add(imgBtn);
 
-        // Organize fields
-        JPanel relationalPanel = new JPanel();
-        relationalPanel.setLayout(new BoxLayout(relationalPanel, BoxLayout.Y_AXIS));
-        relationalPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(BevelBorder.RAISED),"Relational Search"));
-        relationalPanel.add(searchField);
-        relationalPanel.add(priceLabel);
-        relationalPanel.add(priceSlider);
+        //  Reset Button
+        JButton resetBtn = new JButton("Reset Filters");
+        // Fix width to match panels using setMaximumSize in BoxLayout
+        resetBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        resetBtn.addActionListener(e -> {
+            mapPanel.clearOverlays();
+            searchField.setText("Search");
+            priceSlider.setValue(5000);
+            loadEverything();
+        });
 
+        // Add groups to wrapper with spacing
+        controlsWrapper.add(relPanel);
+        controlsWrapper.add(Box.createVerticalStrut(10));
+        controlsWrapper.add(spatPanel);
+        controlsWrapper.add(Box.createVerticalStrut(10));
+        controlsWrapper.add(mediaPanel);
+        controlsWrapper.add(Box.createVerticalStrut(10));
+        controlsWrapper.add(resetBtn);
 
-        // Organize search buttons titled panels
-        JPanel spatialPanel = new JPanel();
-        spatialPanel.setLayout(new BoxLayout(spatialPanel, BoxLayout.Y_AXIS));
-        spatialPanel.setBorder(BorderFactory.createTitledBorder("Spatial Search"));
-        spatialPanel.add(drawAreaBtn);
-
-
-        JPanel multimediaPanel = new JPanel();
-        multimediaPanel.setLayout(new BoxLayout(multimediaPanel, BoxLayout.Y_AXIS));
-        multimediaPanel.setBorder(BorderFactory.createTitledBorder("Multimedia Search"));
-        multimediaPanel.add(uploadImgBtn);
-
-        JPanel searchControlsWrapper = new JPanel(new GridLayout(3, 1));
-        searchControlsWrapper.setOpaque(false);
-        searchControlsWrapper.add(relationalPanel);
-        searchControlsWrapper.add(spatialPanel);
-        searchControlsWrapper.add(multimediaPanel);
-
-        // 5. Results Table
-        // Note: We define 4 columns, but data population might push more.
-        // DefaultTableModel handles this dynamically.
+        // Results Table
         String[] columns = { "ID", "Name", "Address", "Price" };
         tableModel = new DefaultTableModel(new Object[0][0], columns);
         table = new JTable(tableModel);
-        JScrollPane tableScroll = new JScrollPane(table);
-
-        //  When a row is clicked, load details into the Right Panel
         table.getSelectionModel().addListSelectionListener(event -> {
             if (!event.getValueIsAdjusting() && table.getSelectedRow() != -1) {
-                int row = table.getSelectedRow();
-                // column 0 holds the Property ID (Long)
-                Long id = (Long) tableModel.getValueAt(row, 0);
-
-                // Search local cache for the full property object
+                Long id = (Long) tableModel.getValueAt(table.getSelectedRow(), 0);
                 if (allProperties != null) {
-                    for (Property p : allProperties) {
-                        if (p.getPropertyId().equals(id)) {
-                            populateDetails(p);
-                            break;
-                        }
-                    }
+                    allProperties.stream()
+                            .filter(p -> p.getPropertyId().equals(id))
+                            .findFirst()
+                            .ifPresent(this::populateDetails);
                 }
             }
         });
 
-        // Add everything to the panel
-        panel.add(searchControlsWrapper);
-        panel.add(new JLabel("Results"));
-        panel.add(tableScroll);
+        // finish
+        panel.add(controlsWrapper, BorderLayout.NORTH);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
         return panel;
     }
-
-   
     /**
      * Creates the center panel containing the map and its controls.
-     *
      * @return A constructed JPanel for the map.
      */
     private JPanel createCenterMapPanel() {
@@ -300,7 +286,6 @@ public class MainWindow extends JFrame {
 
     /**
      * Creates the right-side details panel for viewing and editing properties.
-     *
      * @return A constructed JPanel for details.
      */
     private JPanel createRightDetailPanel() {
@@ -315,7 +300,6 @@ public class MainWindow extends JFrame {
         createBtn.setBackground(new Color(144, 238, 144)); // Light green
         createBtn.addActionListener(e -> initiateCreateFlow());
 
-        panel.add(createBtn);
         panel.add(createBtn);
         panel.add(Box.createVerticalStrut(10));
 
@@ -402,13 +386,9 @@ public class MainWindow extends JFrame {
         return panel;
     }
 
-    // ==============================================================================================
-    // EVENT HANDLING & BUSINESS LOGIC
-    // ==============================================================================================
 
     /**
      * Initiates the workflow for creating a new property.
-     * <p>
      * Steps:
      * 1. Clears existing form data.
      * 2. Prompts the user to draw the property on the map.
@@ -547,9 +527,9 @@ public class MainWindow extends JFrame {
 
             // Fetch Data
             List<Property> properties = propertyQueries.getAllProperties();
-            List<SchoolCatchmentArea> schools = schoolQueries.getAll();
-            List<TransitStop> stops = transitQueries.getAll();
-            List<CellularCoverage> coverages = cellularQueries.getAll();
+            List<School> schools = schoolQueries.getAll();
+            List<Transit> stops = transitQueries.getAll();
+            List<Cellular> coverages = cellularQueries.getAll();
 
             // Update UI components
             updateView(properties); // Updates Table and Map Property Layer

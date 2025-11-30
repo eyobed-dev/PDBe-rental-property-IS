@@ -1,19 +1,19 @@
 package cz.vut.fit.pdbe.xnuriey00.ui.map.layers;
 
-import cz.vut.fit.pdbe.xnuriey00.model.SchoolCatchmentArea;
+import cz.vut.fit.pdbe.xnuriey00.model.School;
 import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
 
 import java.awt.*;
 import java.util.List;
 
 public class SchoolLayer extends MapLayer {
-      private List<SchoolCatchmentArea> areas;
+      private List<School> areas;
 
       public SchoolLayer() {
             super("Schools");
       }
 
-      public void setAreas(List<SchoolCatchmentArea> areas) {
+      public void setAreas(List<School> areas) {
             this.areas = areas;
       }
 
@@ -24,7 +24,7 @@ public class SchoolLayer extends MapLayer {
 
             g.setColor(new Color(0, 0, 255, 50)); // Transparent Blue
 
-            for (SchoolCatchmentArea area : areas) {
+            for (School area : areas) {
                   try {
                         Shape shape = map.jGeometryToShape(area.getGeometry());
                         g.fill(shape);

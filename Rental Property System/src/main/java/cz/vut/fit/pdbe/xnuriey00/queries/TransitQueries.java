@@ -1,6 +1,6 @@
 package cz.vut.fit.pdbe.xnuriey00.queries;
 
-import cz.vut.fit.pdbe.xnuriey00.model.TransitStop;
+import cz.vut.fit.pdbe.xnuriey00.model.Transit;
 import oracle.jdbc.OraclePreparedStatement;
 import oracle.jdbc.OracleResultSet;
 import oracle.spatial.geometry.JGeometry;
@@ -19,8 +19,8 @@ public class TransitQueries {
             this.connection = connection;
       }
 
-      public List<TransitStop> getAll() throws SQLException {
-            List<TransitStop> list = new ArrayList<>();
+      public List<Transit> getAll() throws SQLException {
+            List<Transit> list = new ArrayList<>();
             String sql = "SELECT STOP_ID, NAME, GEOMETRY as GEO_STRUCT FROM TRANSIT_STOPS";
 
             try (OraclePreparedStatement pstmt = (OraclePreparedStatement) connection.prepareStatement(sql);
@@ -32,7 +32,7 @@ public class TransitQueries {
                         if (struct != null) {
                               jGeom = JGeometry.load(struct);
                         }
-                        list.add(new TransitStop(
+                        list.add(new Transit(
                                     rs.getLong("STOP_ID"),
                                     rs.getString("NAME"),
                                     jGeom));

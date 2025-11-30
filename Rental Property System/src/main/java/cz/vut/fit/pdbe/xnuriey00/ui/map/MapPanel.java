@@ -116,17 +116,17 @@ public class MapPanel extends JPanel {
         repaint();
     }
 
-    public void setSchools(List<SchoolCatchmentArea> schools) {
+    public void setSchools(List<School> schools) {
         schoolLayer.setAreas(schools);
         repaint();
     }
 
-    public void setTransitStops(List<TransitStop> stops) {
+    public void setTransitStops(List<Transit> stops) {
         transitLayer.setStops(stops);
         repaint();
     }
 
-    public void setCellularCoverage(List<CellularCoverage> coverages) {
+    public void setCellularCoverage(List<Cellular> coverages) {
         cellularLayer.setCoverages(coverages);
         repaint();
     }

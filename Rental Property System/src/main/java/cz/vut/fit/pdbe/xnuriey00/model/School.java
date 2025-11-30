@@ -2,23 +2,23 @@ package cz.vut.fit.pdbe.xnuriey00.model;
 
 import oracle.spatial.geometry.JGeometry;
 
-public class TransitStop {
-      private Long stopId;
+public class School {
+      private Long areaId;
       private String name;
       private JGeometry geometry;
 
-      public TransitStop(Long stopId, String name, JGeometry geometry) {
-            this.stopId = stopId;
+      public School(Long areaId, String name, JGeometry geometry) {
+            this.areaId = areaId;
             this.name = name;
             this.geometry = geometry;
       }
 
-      public Long getStopId() {
-            return stopId;
+      public Long getAreaId() {
+            return areaId;
       }
 
-      public void setStopId(Long stopId) {
-            this.stopId = stopId;
+      public void setAreaId(Long areaId) {
+            this.areaId = areaId;
       }
 
       public String getName() {

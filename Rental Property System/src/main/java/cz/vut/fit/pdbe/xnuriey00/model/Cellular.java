@@ -2,12 +2,12 @@ package cz.vut.fit.pdbe.xnuriey00.model;
 
 import oracle.spatial.geometry.JGeometry;
 
-public class CellularCoverage {
+public class Cellular {
       private Long coverageId;
       private String providerName;
       private JGeometry geometry;
 
-      public CellularCoverage(Long coverageId, String providerName, JGeometry geometry) {
+      public Cellular(Long coverageId, String providerName, JGeometry geometry) {
             this.coverageId = coverageId;
             this.providerName = providerName;
             this.geometry = geometry;

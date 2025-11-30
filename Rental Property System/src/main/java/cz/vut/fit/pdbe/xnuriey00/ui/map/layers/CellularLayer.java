@@ -1,19 +1,19 @@
 package cz.vut.fit.pdbe.xnuriey00.ui.map.layers;
 
-import cz.vut.fit.pdbe.xnuriey00.model.CellularCoverage;
+import cz.vut.fit.pdbe.xnuriey00.model.Cellular;
 import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
 
 import java.awt.*;
 import java.util.List;
 
 public class CellularLayer extends MapLayer {
-      private List<CellularCoverage> coverages;
+      private List<Cellular> coverages;
 
       public CellularLayer() {
             super("Cellular");
       }
 
-      public void setCoverages(List<CellularCoverage> coverages) {
+      public void setCoverages(List<Cellular> coverages) {
             this.coverages = coverages;
       }
 
@@ -24,7 +24,7 @@ public class CellularLayer extends MapLayer {
 
             g.setColor(new Color(0, 255, 0, 50));
 
-            for (CellularCoverage coverage : coverages) {
+            for (Cellular coverage : coverages) {
                   try {
                         Shape shape = map.jGeometryToShape(coverage.getGeometry());
                         g.fill(shape);

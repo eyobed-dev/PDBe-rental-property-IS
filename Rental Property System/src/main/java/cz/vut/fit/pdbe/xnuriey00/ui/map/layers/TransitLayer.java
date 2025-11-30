@@ -1,19 +1,19 @@
 package cz.vut.fit.pdbe.xnuriey00.ui.map.layers;
 
-import cz.vut.fit.pdbe.xnuriey00.model.TransitStop;
+import cz.vut.fit.pdbe.xnuriey00.model.Transit;
 import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
 
 import java.awt.*;
 import java.util.List;
 
 public class TransitLayer extends MapLayer {
-      private List<TransitStop> stops;
+      private List<Transit> stops;
 
       public TransitLayer() {
             super("Transit");
       }
 
-      public void setStops(List<TransitStop> stops) {
+      public void setStops(List<Transit> stops) {
             this.stops = stops;
       }
 
@@ -24,7 +24,7 @@ public class TransitLayer extends MapLayer {
 
             g.setColor(Color.ORANGE);
 
-            for (TransitStop stop : stops) {
+            for (Transit stop : stops) {
                   try {
                         Shape shape = map.jGeometryToShape(stop.getGeometry());
                         g.fill(shape);

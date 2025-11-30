@@ -10,7 +10,7 @@ import java.sql.SQLException;
 public class Main {
     public static void main(String[] args) throws Exception{
         //FlatIntelliJLaf.setup();
-        //UIManager.setLookAndFeel(new NimbusLookAndFeel());
+        UIManager.setLookAndFeel(new NimbusLookAndFeel());
         try {
             DBConnection.connect();
         } catch (SQLException e) {

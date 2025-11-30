@@ -10,7 +10,12 @@ public class DBConnection {
 
     private static OracleDataSource ods = null;
     private static Connection conn;
-    
+
+    /**
+     * Hard coded for now
+     * logs in to campus server
+     * @throws SQLException
+     */
     public static void connect() throws SQLException {
         ods = new OracleDataSource();
         String url = "jdbc:oracle:thin:@//gort.fit.vutbr.cz:1521/orclpdb";
@@ -18,11 +23,22 @@ public class DBConnection {
         ods.setUser("xnuriey00");
         ods.setPassword("I2Uwakow");
     }
+
+    /**
+     * close the connection
+     * @throws SQLException
+     */
     public static void close() throws SQLException {
         if(conn!=null) {
             conn.close();
         }
     }
+
+    /**
+     * returns the connection object for use throughout the project
+     * @return Connection
+     * @throws SQLException
+     */
     public static Connection getConnection() throws SQLException {
         conn = ods.getConnection();
         conn.setAutoCommit(false);

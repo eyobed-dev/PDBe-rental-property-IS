@@ -22,7 +22,9 @@ import cz.vut.fit.pdbe.xnuriey00.util.UserSession;
 import oracle.spatial.geometry.JGeometry;
 
 import javax.swing.*;
+import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.EtchedBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -58,27 +60,18 @@ public class MainWindow extends JFrame {
     // Draw Settings
     private DrawSettingsPanel drawSettingsPanel;
 
-
-    /**
-     * Cache of all currently loaded properties to avoid constant DB fetching for
-     * details.
-     */
+   //Cache of all currently loaded properties to avoid constant DB fetching for details.
     private List<Property> allProperties;
 
-    /** The property currently selected or being edited. */
+    //The property currently selected or being edited.
     private Property currentProperty;
 
-    /** Temporary storage for geometry drawn on the map during property creation. */
+    // Temporary storage for geometry drawn on the map during property creation.
     private JGeometry tempGeometry;
+    // Flag indicating if the user is currently in the "Create New Property" flow.
 
-    /**
-     * Flag indicating if the user is currently in the "Create New Property" flow.
-     */
     private boolean isCreating = false;
-
-    // ==============================================================================================
     // CONSTRUCTOR
-    // ==============================================================================================
 
     public MainWindow() {
         setTitle("Rental Property IS");
@@ -127,8 +120,7 @@ public class MainWindow extends JFrame {
      */
     private JPanel createHeader() {
         JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(Color.WHITE);
-        header.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        header.setBorder(BorderFactory.createEtchedBorder());
 
         // Title and Logo
         JLabel title = new JLabel("RENTAL PROPERTY IS");
@@ -137,7 +129,6 @@ public class MainWindow extends JFrame {
 
         // Button Container
         JPanel buttonPanel = new JPanel(new FlowLayout());
-        buttonPanel.setBackground(Color.WHITE);
 
         JButton refreshBtn = new JButton("🔄 REFRESH");
         JButton helpBtn = new JButton("❓ HELP");
@@ -178,6 +169,7 @@ public class MainWindow extends JFrame {
     private JPanel createLeftControlPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setPreferredSize(new Dimension(300, getHeight()));
 
         // 1. Text Search Field
         searchField = new JTextField("Search properties...");
@@ -197,10 +189,8 @@ public class MainWindow extends JFrame {
         });
 
         // 3. Spatial Search Button (Draw Area)
-        JButton drawAreaBtn = new JButton();
-        drawAreaBtn.setText("\uD83D\uDDFA️ Draw Area");
-        drawAreaBtn.setBackground(new Color(144, 229, 255)); // Light blue
-        drawAreaBtn.setOpaque(true);
+        JButton drawAreaBtn = new JButton("\uD83D\uDDFA️ Draw Area");
+        drawAreaBtn.setBackground(new Color(144, 229, 255));
 
         // Logic for Spatial Search
         drawAreaBtn.addActionListener(e -> {
@@ -214,13 +204,20 @@ public class MainWindow extends JFrame {
         });
 
         // 4. Multimedia Search
-        JButton uploadImgBtn = new JButton();
-        uploadImgBtn.setText("\uD83D\uDDBC️ Upload Image");
+        JButton uploadImgBtn = new JButton("\uD83D\uDDBC️ Upload Image");
         uploadImgBtn.setBackground(new Color(251, 207, 207));
-        uploadImgBtn.setOpaque(true);
 
         // Logic for multimedia search
         uploadImgBtn.addActionListener(e -> System.out.println("Action: Upload Image"));
+
+        // Organize fields
+        JPanel relationalPanel = new JPanel();
+        relationalPanel.setLayout(new BoxLayout(relationalPanel, BoxLayout.Y_AXIS));
+        relationalPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(BevelBorder.RAISED),"Relational Search"));
+        relationalPanel.add(searchField);
+        relationalPanel.add(priceLabel);
+        relationalPanel.add(priceSlider);
+
 
         // Organize search buttons titled panels
         JPanel spatialPanel = new JPanel();
@@ -234,26 +231,25 @@ public class MainWindow extends JFrame {
         multimediaPanel.setBorder(BorderFactory.createTitledBorder("Multimedia Search"));
         multimediaPanel.add(uploadImgBtn);
 
-        JPanel searchControlsWrapper = new JPanel(new GridLayout(2, 1));
+        JPanel searchControlsWrapper = new JPanel(new GridLayout(3, 1));
         searchControlsWrapper.setOpaque(false);
+        searchControlsWrapper.add(relationalPanel);
         searchControlsWrapper.add(spatialPanel);
         searchControlsWrapper.add(multimediaPanel);
 
         // 5. Results Table
         // Note: We define 4 columns, but data population might push more.
         // DefaultTableModel handles this dynamically.
-        String[] columns = { "Name", "Price", "Area", "Beds" };
+        String[] columns = { "ID", "Name", "Address", "Price" };
         tableModel = new DefaultTableModel(new Object[0][0], columns);
         table = new JTable(tableModel);
-        table.setFillsViewportHeight(true);
         JScrollPane tableScroll = new JScrollPane(table);
-        tableScroll.setPreferredSize(new Dimension(280, 150));
 
-        // Selection Listener: When a row is clicked, load details into the Right Panel
+        //  When a row is clicked, load details into the Right Panel
         table.getSelectionModel().addListSelectionListener(event -> {
             if (!event.getValueIsAdjusting() && table.getSelectedRow() != -1) {
                 int row = table.getSelectedRow();
-                // We assume column 0 holds the Property ID (Long)
+                // column 0 holds the Property ID (Long)
                 Long id = (Long) tableModel.getValueAt(row, 0);
 
                 // Search local cache for the full property object
@@ -268,40 +264,14 @@ public class MainWindow extends JFrame {
             }
         });
 
-        // Add everything to the main panel
-        panel.add(searchField);
-        panel.add(priceLabel);
-        panel.add(priceSlider);
+        // Add everything to the panel
         panel.add(searchControlsWrapper);
         panel.add(new JLabel("Results"));
         panel.add(tableScroll);
         return panel;
     }
 
-    private void filterPropertiesByGeometry(JGeometry geometry) {
-        drawSettingsPanel.setVisible(false);
-
-        // 1. Run Query
-        // this part is a mess but it works
-        try (Connection conn = DBConnection.getConnection()) {
-            PropertyQueries queries = new PropertyQueries(conn);
-            List<Property> props = queries
-                    .getPropertiesIntersecting(geometry);
-            updateView(props);
-            JOptionPane.showMessageDialog(this, "Found " + props.size() + " properties in area.");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error searching area: " + ex.getMessage());
-        }
-
-        // 2. Show Overlay
-        mapPanel.clearOverlays();
-        mapPanel.addOverlay(geometry, new Color(255, 0, 0, 50), "Search Area");
-
-        // 3. Reset Tool
-        mapPanel.setCurrentTool(new NavigationTool());
-    }
-
+   
     /**
      * Creates the center panel containing the map and its controls.
      *
@@ -616,6 +586,29 @@ public class MainWindow extends JFrame {
             JOptionPane.showMessageDialog(this, "Error filtering properties: " + e.getMessage());
         }
     }
+ private void filterPropertiesByGeometry(JGeometry geometry) {
+        drawSettingsPanel.setVisible(false);
+
+        // 1. Run Query
+        // this part is a mess but it works
+        try (Connection conn = DBConnection.getConnection()) {
+            PropertyQueries queries = new PropertyQueries(conn);
+            List<Property> props = queries
+                    .getPropertiesIntersecting(geometry);
+            updateView(props);
+            JOptionPane.showMessageDialog(this, "Found " + props.size() + " properties in area.");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error searching area: " + ex.getMessage());
+        }
+
+        // 2. Show Overlay
+        mapPanel.clearOverlays();
+        mapPanel.addOverlay(geometry, new Color(255, 0, 0, 50), "Search Area");
+
+        // 3. Reset Tool
+        mapPanel.setCurrentTool(new NavigationTool());
+    }
 
     // ==============================================================================================
     // HELPER METHODS
@@ -676,6 +669,11 @@ public class MainWindow extends JFrame {
         loadImages(p.getPropertyId());
     }
 
+    /**
+     * Loads images for a specific property.
+     *
+     * @param propertyId The ID of the property to load images for.
+     */
     private void loadImages(Long propertyId) {
         try (Connection conn = DBConnection.getConnection()) {
             PropertyImageQueries imgQueries = new PropertyImageQueries(conn);

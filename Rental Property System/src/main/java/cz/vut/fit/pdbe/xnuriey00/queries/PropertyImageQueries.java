@@ -21,10 +21,12 @@ public class PropertyImageQueries {
     /**
      * Uploads an image and generates Multimedia Features (SI_StillImage, etc.).
      * Strictly follows the lecture pattern:
+     * see here https://rychly-edu.gitlab.io/dbs/multimedia/oracle/#inserting-images-into-database
      * 1. Insert empty ORDImage
      * 2. Select for Update
      * 3. Load Data & Update ORDImage
      * 4. Update SI_StillImage and Features (AverageColor, Texture, etc.)
+     * With the exception that we do not use inline SQL. e.g. returnCols and try-with-resources syntax
      */
     public void uploadImage(Long propertyId, String imageName, String localFilePath) throws SQLException, IOException {
         try {
@@ -108,6 +110,7 @@ public class PropertyImageQueries {
 
     /**
      * Retrieves the binary image data for display.
+     * Essentialy a copy of https://rychly-edu.gitlab.io/dbs/multimedia/oracle/#retrieving-images-and-their-properties-from-database
      */
     public byte[] getImageData(Long imageId) throws SQLException, IOException {
         String sql = "SELECT IMAGE_DATA FROM PROPERTY_IMAGES WHERE IMAGE_ID = ?";
@@ -117,6 +120,7 @@ public class PropertyImageQueries {
             try (OracleResultSet rs = (OracleResultSet) pstmt.executeQuery()) {
                 if (rs.next()) {
                     OrdImage imgProxy = (OrdImage) rs.getORAData("IMAGE_DATA", OrdImage.getORADataFactory());
+                    //It differs from the lecture here that we do not save the image to file, but return it as a byte array
                     return imgProxy.getDataInByteArray();
                 }
             }

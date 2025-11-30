@@ -60,11 +60,11 @@ public class InitialWindow extends JFrame {
     // login existing user or administrator
     private void login() {
         try (Connection conn = DBConnection.getConnection()) {
-            UserQueries userDAO = new UserQueries(conn);
+            UserQueries userQuery = new UserQueries(conn);
             String user = txtUsername.getText().trim();
             String pass = new String(txtPassword.getPassword());
 
-            User foundUser = userDAO.findByUsernameAndPassword(user, pass);
+            User foundUser = userQuery.findByUsernameAndPassword(user, pass);
 
             if (true) {
                 UserSession.getInstance().setCurrentUser(foundUser);
@@ -84,19 +84,19 @@ public class InitialWindow extends JFrame {
     // Allow registering with normal user powers
     private void register() {
         try (Connection conn = DBConnection.getConnection()) {
-            UserQueries userDAO = new UserQueries(conn);
+            UserQueries userQuery = new UserQueries(conn);
             String user = txtUsername.getText().trim();
             String pass = new String(txtPassword.getPassword());
 
             if (user.isEmpty() || pass.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Username and password cannot be empty.", "Error",
+                JOptionPane.showMessageDialog(this, "Username and/or password cannot be empty.", "Error",
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // Create new user with Default Type "0" (Standard User)
+            // Create new user with Type "0" (Standard User) "1" is for administrator.
             User newUser = new User(user, pass, "0");
-            userDAO.createUser(newUser);
+            userQuery.createUser(newUser);
             JOptionPane.showMessageDialog(this, "Registration successful!\nnow log in.", "User created",
                     JOptionPane.INFORMATION_MESSAGE);
 
@@ -107,12 +107,6 @@ public class InitialWindow extends JFrame {
             } else {
                 JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Error",
                         JOptionPane.ERROR_MESSAGE);
-            }
-            try {
-                //https://rychly-edu.gitlab.io/dbs/jdbc/#transactions
-                //Bad User Information, undo
-                DBConnection.getConnection().rollback();
-            } catch (SQLException ignored) {
             }
         }
     }

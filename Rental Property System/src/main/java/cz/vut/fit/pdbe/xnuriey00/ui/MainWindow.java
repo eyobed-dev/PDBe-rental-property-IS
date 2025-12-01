@@ -364,9 +364,9 @@ public class MainWindow extends JFrame {
     
     JPanel editRow = new JPanel(new GridLayout(1, 3, 5, 0));
     editBtn = new JButton("Edit");
-    redrawBtn = new JButton("Redraw"); // Icon removed for space
+    redrawBtn = new JButton("Redraw");
     deleteBtn = new JButton("Delete");
-    deleteBtn.setForeground(Color.RED);
+    deleteBtn.setBackground(new Color(255, 0, 0,50));
     
     editRow.add(editBtn);
     editRow.add(redrawBtn);

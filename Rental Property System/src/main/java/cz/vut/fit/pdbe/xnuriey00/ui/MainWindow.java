@@ -151,10 +151,8 @@ public class MainWindow extends JFrame {
         return header;
     }
 
-    /**
+   /**
      * Creates the left-side control panel containing search tools and results list.
-     * 
-     * @return A constructed JPanel for the left sidebar.
      */
     private JPanel createLeftControlPanel() {
         // Main Layout
@@ -165,7 +163,7 @@ public class MainWindow extends JFrame {
         JPanel controlsWrapper = new JPanel();
         controlsWrapper.setLayout(new BoxLayout(controlsWrapper, BoxLayout.Y_AXIS));
 
-        // Relational Search Panel
+        // 1. Relational Search Panel
         JPanel relPanel = new JPanel(new GridLayout(0, 1, 5, 5));
         relPanel.setBorder(BorderFactory.createTitledBorder("Relational Search"));
 
@@ -186,8 +184,8 @@ public class MainWindow extends JFrame {
         relPanel.add(priceLabel);
         relPanel.add(priceSlider);
 
-        // spatial Search Panel
-        JPanel spatPanel = new JPanel(new GridLayout(1, 1)); // Single cell grid for full expansion
+        // 2. Spatial Search Panel
+        JPanel spatPanel = new JPanel(new GridLayout(1, 1));
         spatPanel.setBorder(BorderFactory.createTitledBorder("Spatial Search"));
 
         JButton drawBtn = new JButton("\uD83D\uDDFA\uFE0F Draw Area");
@@ -201,18 +199,84 @@ public class MainWindow extends JFrame {
         });
         spatPanel.add(drawBtn);
 
-        // Multimedia Search Pane
-        JPanel mediaPanel = new JPanel(new GridLayout(1, 1));
+        // 3. Multimedia Search Pane
+        // Changed GridLayout to (0, 1) to stack the two buttons vertically
+        JPanel mediaPanel = new JPanel(new GridLayout(0, 1, 5, 5));
         mediaPanel.setBorder(BorderFactory.createTitledBorder("Multimedia Search"));
 
-        JButton imgBtn = new JButton("\uD83D\uDDBC\uFE0F Upload Image");
+        // A. Search By Image Button
+        JButton imgBtn = new JButton("\uD83D\uDDBC\uFE0F Search by Image");
         imgBtn.setBackground(new Color(251, 207, 207));
-        imgBtn.addActionListener(e -> System.out.println("Action: Upload Image"));
-        mediaPanel.add(imgBtn);
+        imgBtn.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Select an image to find similar properties");
+            
+            if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File imageFile = fileChooser.getSelectedFile();
+                try (Connection conn = DBConnection.getConnection()) {
+                    PropertyImageQueries imgQueries = new PropertyImageQueries(conn);
+                    
+                    // Run LIRE Search
+                    List<PropertyImage> foundImages = imgQueries.searchSimilarImages(imageFile.getAbsolutePath());
+                    
+                    if (foundImages.isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "No visually similar properties found.");
+                        return;
+                    }
 
-        // Reset Button
+                    // Filter Main List
+                    java.util.ArrayList<Long> foundPropertyIds = new java.util.ArrayList<>();
+                    for (PropertyImage pi : foundImages) {
+                        foundPropertyIds.add(pi.getPropertyId());
+                    }
+
+                    if (allProperties != null) {
+                        java.util.List<Property> filteredList = new java.util.ArrayList<>();
+                        for (Property p : allProperties) {
+                            if (foundPropertyIds.contains(p.getPropertyId())) {
+                                filteredList.add(p);
+                            }
+                        }
+                        updateView(filteredList);
+                        JOptionPane.showMessageDialog(this, "Found " + filteredList.size() + " similar properties!");
+                    }
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Search Error: " + ex.getMessage());
+                }
+            }
+        });
+
+        // B. Rebuild Index Button (THE NEW ADDITION)
+        JButton rebuildBtn = new JButton("⚙️ Rebuild Index");
+        rebuildBtn.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this, 
+                "This will scan the database and rebuild the visual index. It may take time. Continue?");
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                new Thread(() -> {
+                    try (Connection conn = DBConnection.getConnection()) {
+                        PropertyImageQueries queries = new PropertyImageQueries(conn);
+                        queries.reindexAllImages(); // This calls the method in your Query class
+                        SwingUtilities.invokeLater(() -> 
+                            JOptionPane.showMessageDialog(this, "Index Rebuilt Successfully!")
+                        );
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        SwingUtilities.invokeLater(() -> 
+                            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage())
+                        );
+                    }
+                }).start();
+            }
+        });
+
+        mediaPanel.add(imgBtn);
+        mediaPanel.add(rebuildBtn);
+
+        // 4. Reset Button
         JButton resetBtn = new JButton("Reset Filters");
-        // Fix width to match panels using setMaximumSize in BoxLayout
         resetBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
         resetBtn.addActionListener(e -> {
             searchField.setText("Search");
@@ -222,7 +286,7 @@ public class MainWindow extends JFrame {
             loadEverything();
         });
 
-        // Add groups to wrapper with spacing
+        // Add groups to wrapper
         controlsWrapper.add(relPanel);
         controlsWrapper.add(Box.createVerticalStrut(10));
         controlsWrapper.add(spatPanel);
@@ -231,7 +295,7 @@ public class MainWindow extends JFrame {
         controlsWrapper.add(Box.createVerticalStrut(10));
         controlsWrapper.add(resetBtn);
 
-        // Results Table
+        // Results Table Setup
         String[] columns = { "ID", "Name", "Address", "Price" };
         tableModel = new DefaultTableModel(new Object[0][0], columns);
         table = new JTable(tableModel);
@@ -247,7 +311,6 @@ public class MainWindow extends JFrame {
             }
         });
 
-        // finish
         panel.add(controlsWrapper, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
 

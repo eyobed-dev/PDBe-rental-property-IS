@@ -20,8 +20,8 @@ public class DBConnection {
         ods = new OracleDataSource();
         String url = "jdbc:oracle:thin:@//gort.fit.vutbr.cz:1521/orclpdb";
         ods.setURL(url);
-        ods.setUser("xnuriey00");
-        ods.setPassword("I2Uwakow");
+        ods.setUser("xsankau00");
+        ods.setPassword("xpUhxIEU");
     }
 
     /**

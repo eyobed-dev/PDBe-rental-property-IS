@@ -8,18 +8,25 @@ import cz.vut.fit.pdbe.xnuriey00.util.*;
 import java.sql.SQLException;
 
 public class Main {
-    public static void main(String[] args) throws Exception{
-        //FlatIntelliJLaf.setup();
+    public static void main(String[] args) throws Exception {
+        // Option to use FlatLaf if preferred, otherwise Nimbus
+        // FlatIntelliJLaf.setup();
         UIManager.setLookAndFeel(new NimbusLookAndFeel());
+
         try {
             DBConnection.connect();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null,"Failed to connect to database:\n" + e.getMessage(),"Startup Error",JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, 
+                "Failed to connect to database:\n" + e.getMessage(), 
+                "Startup Error", 
+                JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
         SwingUtilities.invokeLater(Main::launch);
     }
+
     public static void launch() {
+        // Opens the Login/Initial window
         new InitialWindow().setVisible(true);
     }
 }

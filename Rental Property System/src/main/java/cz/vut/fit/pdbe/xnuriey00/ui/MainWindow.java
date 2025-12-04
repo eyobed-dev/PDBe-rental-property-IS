@@ -200,7 +200,6 @@ public class MainWindow extends JFrame {
         spatPanel.add(drawBtn);
 
         // 3. Multimedia Search Pane
-        // Changed GridLayout to (0, 1) to stack the two buttons vertically
         JPanel mediaPanel = new JPanel(new GridLayout(0, 1, 5, 5));
         mediaPanel.setBorder(BorderFactory.createTitledBorder("Multimedia Search"));
 
@@ -216,7 +215,7 @@ public class MainWindow extends JFrame {
                 try (Connection conn = DBConnection.getConnection()) {
                     PropertyImageQueries imgQueries = new PropertyImageQueries(conn);
                     
-                    // Run LIRE Search
+                    // Run Oracle Native Search
                     List<PropertyImage> foundImages = imgQueries.searchSimilarImages(imageFile.getAbsolutePath());
                     
                     if (foundImages.isEmpty()) {
@@ -248,32 +247,9 @@ public class MainWindow extends JFrame {
             }
         });
 
-        // B. Rebuild Index Button (THE NEW ADDITION)
-        JButton rebuildBtn = new JButton("⚙️ Rebuild Index");
-        rebuildBtn.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this, 
-                "This will scan the database and rebuild the visual index. It may take time. Continue?");
-            
-            if (confirm == JOptionPane.YES_OPTION) {
-                new Thread(() -> {
-                    try (Connection conn = DBConnection.getConnection()) {
-                        PropertyImageQueries queries = new PropertyImageQueries(conn);
-                        queries.reindexAllImages(); // This calls the method in your Query class
-                        SwingUtilities.invokeLater(() -> 
-                            JOptionPane.showMessageDialog(this, "Index Rebuilt Successfully!")
-                        );
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        SwingUtilities.invokeLater(() -> 
-                            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage())
-                        );
-                    }
-                }).start();
-            }
-        });
+        // B. Rebuild Index Button - REMOVED (Not needed for Oracle Multimedia)
 
         mediaPanel.add(imgBtn);
-        mediaPanel.add(rebuildBtn);
 
         // 4. Reset Button
         JButton resetBtn = new JButton("Reset Filters");

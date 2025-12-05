@@ -2,6 +2,11 @@ package cz.vut.fit.pdbe.xnuriey00.model;
 
 import java.sql.Date;
 
+/**
+ * Represents an image associated with a property.
+ * 
+ * @author eyobed-dev
+ */
 public class PropertyImage {
     private Long imageId;
     private Long propertyId;
@@ -15,11 +20,22 @@ public class PropertyImage {
         this.uploadDate = uploadDate;
     }
 
-    public Long getImageId() { return imageId; }
-    public Long getPropertyId() { return propertyId; }
-    public String getImageName() { return imageName; }
-    public Date getUploadDate() { return uploadDate; }
-    
+    public Long getImageId() {
+        return imageId;
+    }
+
+    public Long getPropertyId() {
+        return propertyId;
+    }
+
+    public String getImageName() {
+        return imageName;
+    }
+
+    public Date getUploadDate() {
+        return uploadDate;
+    }
+
     @Override
     public String toString() {
         return imageName + " (" + uploadDate + ")";

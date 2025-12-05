@@ -1,12 +1,14 @@
- ---FIT BUT
+---FIT BUT
 ---PDBe -- project
----Part 2
+---Part 2 : SQL Schema
 
 -- Team Xnuriey00
+-- Eyobеd A (xnuriey00)
+-- Kaung San (xkaungs00)
+-- 
 -- https://gitlab.com/fit-vut1/pdbe/rental-property-is
 
--- Script crash if we drop a table that does not exist so we wrap it with exception handler
--- we used PL/sql to handle this 
+-- PL/SQL blocks are used to conditionally drop tables, preventing script termination if a table does not exist.
 
 BEGIN
     EXECUTE IMMEDIATE 'DROP TABLE PROPERTY_IMAGES';
@@ -111,8 +113,7 @@ CREATE TABLE CELLULAR_COVERAGE (
     GEOMETRY            SDO_GEOMETRY
 );
 
---fix oracle spatial metadata table(to do ....)
---fix oracle spatial metadata table(to do ....)
+
 DELETE FROM USER_SDO_GEOM_METADATA WHERE TABLE_NAME IN ('PROPERTIES', 'SCHOOL_CATCHMENT_AREAS', 'TRANSIT_STOPS', 'CELLULAR_COVERAGE');
 
 --inserting metadata for spatial table. view: https://rychly-edu.gitlab.io/dbs/spatial/oracle/#spatial-reference-system-sdo_srid

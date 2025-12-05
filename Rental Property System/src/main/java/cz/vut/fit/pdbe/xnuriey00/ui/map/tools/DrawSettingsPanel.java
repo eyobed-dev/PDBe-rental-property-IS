@@ -14,7 +14,6 @@ public class DrawSettingsPanel extends JPanel {
       public DrawSettingsPanel() {
             setLayout(new FlowLayout(FlowLayout.LEFT));
             setBorder(BorderFactory.createTitledBorder("Draw Settings"));
-            setBackground(Color.WHITE);
 
             // Type Selection
             add(new JLabel("Type:"));

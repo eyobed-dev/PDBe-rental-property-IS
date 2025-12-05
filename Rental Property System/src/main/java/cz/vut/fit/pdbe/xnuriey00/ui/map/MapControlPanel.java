@@ -11,7 +11,6 @@ public class MapControlPanel extends JPanel {
       public MapControlPanel(MapPanel mapPanel) {
             setLayout(new FlowLayout(FlowLayout.LEFT));
             setBorder(BorderFactory.createTitledBorder("Map Controls"));
-            setBackground(Color.WHITE);
 
             // Layer Toggles
             JPanel layerPanel = new JPanel(new FlowLayout());

@@ -1,6 +1,5 @@
 package cz.vut.fit.pdbe.xnuriey00;
 
-import com.formdev.flatlaf.FlatIntelliJLaf;
 import javax.swing.*;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import cz.vut.fit.pdbe.xnuriey00.ui.*;

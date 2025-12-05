@@ -24,7 +24,11 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * The main application window
+ * The main application window.
+ * Handles the primary UI layout, map integration, property management, and
+ * image operations.
+ * 
+ * @author eyobed-dev
  */
 public class MainWindow extends JFrame {
 
@@ -44,6 +48,7 @@ public class MainWindow extends JFrame {
     // Image Carousel Components
     private JLabel imageLabel;
     private JButton prevImgBtn, nextImgBtn, addImgBtn, deleteImgBtn;
+    private JButton mirrorImgBtn, rotateImgBtn, flipImgBtn;
     private List<PropertyImage> currentImages;
     private int currentImageIndex = 0;
 
@@ -62,6 +67,10 @@ public class MainWindow extends JFrame {
     // Flag indicating if the user is currently in the "Create New Property" flow.
 
     private boolean isCreating = false;
+
+    // Static log area for simple access
+    private static JTextArea logArea;
+
     // CONSTRUCTOR
 
     public MainWindow() {
@@ -125,8 +134,8 @@ public class MainWindow extends JFrame {
         JButton logoutBtn = new JButton("⏻ LOGOUT");
 
         // Action Listeners
-        refreshBtn.addActionListener(e -> System.out.println("Refresh clicked"));
-        helpBtn.addActionListener(e -> System.out.println("Help clicked"));
+        refreshBtn.addActionListener(e -> loadEverything());
+        helpBtn.addActionListener(e -> new HelpWindow().setVisible(true));
 
         // Logout Logic: Clear session, close window, and relaunch Main login
         logoutBtn.addActionListener(e -> {
@@ -135,7 +144,7 @@ public class MainWindow extends JFrame {
             Main.launch();
         });
 
-        // Admin-only feature check
+        // Admin only feature check
         if (UserSession.getInstance().isAdmin()) {
             JButton manageUsers = new JButton("\uD83D\uDC65 MANAGE USERS");
             manageUsers.addActionListener(e -> new UserManagementWindow().setVisible(true));
@@ -152,7 +161,7 @@ public class MainWindow extends JFrame {
     }
 
     /**
-     * Creates the left-side control panel containing search tools and results list.
+     * Creates the left side control panel containing search tools and results list.
      * 
      * @return A constructed JPanel for the left sidebar.
      */
@@ -202,17 +211,53 @@ public class MainWindow extends JFrame {
         spatPanel.add(drawBtn);
 
         // Multimedia Search Pane
-        JPanel mediaPanel = new JPanel(new GridLayout(1, 1));
+        JPanel mediaPanel = new JPanel(new GridLayout(0, 2, 5, 5)); // 2 columns, auto rows
         mediaPanel.setBorder(BorderFactory.createTitledBorder("Multimedia Search"));
 
         JButton imgBtn = new JButton("\uD83D\uDDBC\uFE0F Upload Image");
-        imgBtn.setBackground(new Color(251, 207, 207));
-        imgBtn.addActionListener(e -> System.out.println("Action: Upload Image"));
+        imgBtn.addActionListener(e -> uploadImageAction());
+
+        // Weight inputs
+        JTextField acWeightField = new JTextField("0.3");
+        acWeightField.setBorder(BorderFactory.createTitledBorder("AC"));
+
+        JTextField chWeightField = new JTextField("0.3");
+        chWeightField.setBorder(BorderFactory.createTitledBorder("CH"));
+
+        JTextField pcWeightField = new JTextField("0.3");
+        pcWeightField.setBorder(BorderFactory.createTitledBorder("PC"));
+
+        JTextField txWeightField = new JTextField("0.1");
+        txWeightField.setBorder(BorderFactory.createTitledBorder("TX"));
+
+        JButton searchImgBtn = new JButton("Search Similar");
+        searchImgBtn.addActionListener(e -> {
+            if (currentImages == null || currentImages.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No source image selected.");
+                return;
+            }
+            try {
+                double ac = Double.parseDouble(acWeightField.getText());
+                double ch = Double.parseDouble(chWeightField.getText());
+                double pc = Double.parseDouble(pcWeightField.getText());
+                double tx = Double.parseDouble(txWeightField.getText());
+
+                Long sourceId = currentImages.get(currentImageIndex).getImageId();
+                searchSimilarImages(sourceId, ac, ch, pc, tx);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid number on weight fields.");
+            }
+        });
+
         mediaPanel.add(imgBtn);
+        mediaPanel.add(searchImgBtn);
+        mediaPanel.add(acWeightField);
+        mediaPanel.add(chWeightField);
+        mediaPanel.add(pcWeightField);
+        mediaPanel.add(txWeightField);
 
         // Reset Button
         JButton resetBtn = new JButton("Reset Filters");
-        // Fix width to match panels using setMaximumSize in BoxLayout
         resetBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
         resetBtn.addActionListener(e -> {
             searchField.setText("Search");
@@ -277,7 +322,36 @@ public class MainWindow extends JFrame {
 
         mapContainer.add(bottomPanel, BorderLayout.SOUTH);
 
+        // SQL Log Area
+        logArea = new JTextArea(5, 50);
+        logArea.setEditable(false);
+        logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        JScrollPane logScroll = new JScrollPane(logArea);
+        logScroll.setBorder(BorderFactory.createTitledBorder("SQL Query Log"));
+
+        // Add log area to the bottom of the map container
+        // We need to wrap the bottomPanel and logScroll together
+        JPanel southContainer = new JPanel(new BorderLayout());
+        southContainer.add(bottomPanel, BorderLayout.NORTH);
+        southContainer.add(logScroll, BorderLayout.CENTER);
+
+        mapContainer.add(southContainer, BorderLayout.SOUTH);
+
         return mapContainer;
+    }
+
+    /**
+     * Static method to log queries from anywhere in the app.
+     * 
+     * @param query The SQL query string to log.
+     */
+    public static void logQuery(String query) {
+        if (logArea != null) {
+            SwingUtilities.invokeLater(() -> {
+                logArea.append(query + "\n--------------------------------------------------\n");
+                logArea.setCaretPosition(logArea.getDocument().getLength());
+            });
+        }
     }
 
     /**
@@ -286,123 +360,150 @@ public class MainWindow extends JFrame {
      * @return A constructed JPanel for details.
      */
     private JPanel createRightDetailPanel() {
-    //Main Container
-    JPanel panel = new JPanel(new BorderLayout(0, 15));
-    panel.setPreferredSize(new Dimension(320, 0));
-    panel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        // Main Container
+        JPanel panel = new JPanel(new BorderLayout(0, 15));
+        panel.setPreferredSize(new Dimension(320, 0));
+        panel.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-    //Top Section
-    JPanel topSection = new JPanel();
-    topSection.setLayout(new BoxLayout(topSection, BoxLayout.Y_AXIS));
-    
-    createBtn = new JButton("➕ Create New Property");
-    createBtn.setBackground(new Color(144, 238, 144));
-    createBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-    createBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35)); // Full width
-    createBtn.addActionListener(e -> initiateCreateFlow());
+        // Top Section
+        JPanel topSection = new JPanel();
+        topSection.setLayout(new BoxLayout(topSection, BoxLayout.Y_AXIS));
 
-    // Image Container
-    JPanel imgContainer = new JPanel(new BorderLayout());
-    imgContainer.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-    imgContainer.setPreferredSize(new Dimension(280, 180)); // Fixed aspect ratio
-    imageLabel = new JLabel("No Image", SwingConstants.CENTER);
-    imgContainer.add(imageLabel, BorderLayout.CENTER);
+        createBtn = new JButton("➕ Create New Property");
+        createBtn.setBackground(new Color(144, 238, 144));
+        createBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        createBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35)); // Full width
+        createBtn.addActionListener(e -> initiateCreateFlow());
 
-    // Image Controls
-    JPanel imgNav = new JPanel(new GridLayout(1, 4, 2, 0));
-    prevImgBtn = new JButton("◀");
-    addImgBtn = new JButton("➕");
-    deleteImgBtn = new JButton("🗑");
-    nextImgBtn = new JButton("▶");
-    
-    // Compact formatting for controls
-    for (JButton b : new JButton[]{prevImgBtn, addImgBtn, deleteImgBtn, nextImgBtn}) {
-        b.setMargin(new Insets(2, 2, 2, 2)); // Minimal padding
-        imgNav.add(b);
+        // Image Container
+        JPanel imgContainer = new JPanel(new BorderLayout());
+        imgContainer.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        imgContainer.setPreferredSize(new Dimension(280, 180)); // Fixed aspect ratio
+        imageLabel = new JLabel("No Image", SwingConstants.CENTER);
+        imgContainer.add(imageLabel, BorderLayout.CENTER);
+
+        // Image Controls
+        JPanel imgNav = new JPanel(new GridLayout(1, 4, 2, 0));
+        prevImgBtn = new JButton("⏪");
+        addImgBtn = new JButton("➕");
+        deleteImgBtn = new JButton("🗑");
+        nextImgBtn = new JButton("⏩");
+
+        // Compact formatting for controls
+        for (JButton b : new JButton[] { prevImgBtn, addImgBtn, deleteImgBtn, nextImgBtn }) {
+            b.setMargin(new Insets(2, 2, 2, 2)); // Minimal padding
+            imgNav.add(b);
+        }
+
+        prevImgBtn.addActionListener(e -> navigateImage(-1));
+        nextImgBtn.addActionListener(e -> navigateImage(1));
+        addImgBtn.addActionListener(e -> addImage());
+        deleteImgBtn.addActionListener(e -> deleteImage());
+
+        // Image Manipulation Controls
+        JPanel imgManip = new JPanel(new GridLayout(1, 3, 2, 0));
+        imgManip.setBorder(BorderFactory.createTitledBorder("Edit Image"));
+
+        mirrorImgBtn = new JButton("Mirror");
+        rotateImgBtn = new JButton("Rotate");
+        flipImgBtn = new JButton("Flip");
+
+        for (JButton b : new JButton[] { mirrorImgBtn, rotateImgBtn, flipImgBtn }) {
+            b.setMargin(new Insets(2, 2, 2, 2));
+            b.setFont(new Font(null, Font.PLAIN, 10)); // Smaller font
+            imgManip.add(b);
+        }
+
+        mirrorImgBtn.addActionListener(e -> mirrorImage());
+        rotateImgBtn.addActionListener(e -> rotateImage());
+        flipImgBtn.addActionListener(e -> flipImage());
+
+        topSection.add(createBtn);
+        topSection.add(Box.createVerticalStrut(10));
+        topSection.add(imgContainer);
+        topSection.add(imgNav); // Nav bar sits flush under image
+        topSection.add(imgManip); // Manipulation controls below nav
+
+        // Center Section: Data Form
+        JPanel formPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // 2 Cols, 10px gaps
+
+        // Inline field initialization
+        nameField = new JTextField();
+        addressField = new JTextField();
+        priceField = new JTextField();
+        bedsField = new JTextField();
+        areaField = new JTextField();
+
+        // Add pairs to grid
+        formPanel.add(new JLabel("Building Name:"));
+        formPanel.add(nameField);
+        formPanel.add(new JLabel("Address:"));
+        formPanel.add(addressField);
+        formPanel.add(new JLabel("Price (CZK):"));
+        formPanel.add(priceField);
+        formPanel.add(new JLabel("Bedrooms:"));
+        formPanel.add(bedsField);
+        formPanel.add(new JLabel("Area (m²):"));
+        formPanel.add(areaField);
+
+        // Description
+        JPanel centerWrapper = new JPanel(new BorderLayout(0, 5));
+        centerWrapper.add(formPanel, BorderLayout.NORTH);
+
+        descArea = new JTextArea(4, 20);
+        descArea.setLineWrap(true);
+        descArea.setWrapStyleWord(true);
+        JScrollPane descScroll = new JScrollPane(descArea);
+        descScroll.setBorder(BorderFactory.createTitledBorder("Description"));
+        centerWrapper.add(descScroll, BorderLayout.CENTER);
+
+        // Bottom Section: Actions
+        JPanel actionWrapper = new JPanel(new GridLayout(2, 1, 0, 5));
+
+        JPanel editRow = new JPanel(new GridLayout(1, 3, 5, 0));
+        editBtn = new JButton("Edit");
+        redrawBtn = new JButton("Redraw");
+        deleteBtn = new JButton("Delete");
+        deleteBtn.setBackground(new Color(255, 170, 170, 194));
+
+        editRow.add(editBtn);
+        editRow.add(redrawBtn);
+        editRow.add(deleteBtn);
+
+        JPanel saveRow = new JPanel(new GridLayout(1, 2, 5, 0));
+        saveBtn = new JButton("Save");
+        cancelBtn = new JButton("Cancel");
+        saveBtn.setBackground(new Color(144, 238, 144));
+
+        saveRow.add(saveBtn);
+        saveRow.add(cancelBtn);
+
+        actionWrapper.add(editRow);
+        actionWrapper.add(saveRow);
+
+        // Listeners
+        redrawBtn.setVisible(false);
+        redrawBtn.addActionListener(e -> initiateRedrawFlow());
+        editBtn.addActionListener(e -> setEditMode(true));
+        saveBtn.addActionListener(e -> saveProperty());
+        deleteBtn.addActionListener(e -> deleteProperty());
+        cancelBtn.addActionListener(e -> {
+            setEditMode(false);
+            if (currentProperty != null)
+                populateDetails(currentProperty);
+            else
+                clearFields();
+        });
+
+        // Final
+        panel.add(topSection, BorderLayout.NORTH);
+        panel.add(centerWrapper, BorderLayout.CENTER);
+        panel.add(actionWrapper, BorderLayout.SOUTH);
+
+        setEditMode(false);
+        return panel;
     }
 
-    prevImgBtn.addActionListener(e -> navigateImage(-1));
-    nextImgBtn.addActionListener(e -> navigateImage(1));
-    addImgBtn.addActionListener(e -> addImage());
-    deleteImgBtn.addActionListener(e -> deleteImage());
-
-    topSection.add(createBtn);
-    topSection.add(Box.createVerticalStrut(10));
-    topSection.add(imgContainer);
-    topSection.add(imgNav); // Nav bar sits flush under image
-
-    //Center Section: Data Form
-    JPanel formPanel = new JPanel(new GridLayout(0, 2, 10, 10)); // 2 Cols, 10px gaps
-    
-    // Inline field initialization 
-    nameField = new JTextField();
-    addressField = new JTextField();
-    priceField = new JTextField();
-    bedsField = new JTextField();
-    areaField = new JTextField();
-
-    // Add pairs to grid
-    formPanel.add(new JLabel("Building Name:")); formPanel.add(nameField);
-    formPanel.add(new JLabel("Address:"));       formPanel.add(addressField);
-    formPanel.add(new JLabel("Price (CZK):"));     formPanel.add(priceField);
-    formPanel.add(new JLabel("Bedrooms:"));      formPanel.add(bedsField);
-    formPanel.add(new JLabel("Area (m²):"));     formPanel.add(areaField);
-
-    // Description 
-    JPanel centerWrapper = new JPanel(new BorderLayout(0, 5));
-    centerWrapper.add(formPanel, BorderLayout.NORTH);
-    
-    descArea = new JTextArea(4, 20);
-    descArea.setLineWrap(true);
-    descArea.setWrapStyleWord(true);
-    JScrollPane descScroll = new JScrollPane(descArea);
-    descScroll.setBorder(BorderFactory.createTitledBorder("Description"));
-    centerWrapper.add(descScroll, BorderLayout.CENTER);
-
-    //Bottom Section: Actions
-    JPanel actionWrapper = new JPanel(new GridLayout(2, 1, 0, 5));
-    
-    JPanel editRow = new JPanel(new GridLayout(1, 3, 5, 0));
-    editBtn = new JButton("Edit");
-    redrawBtn = new JButton("Redraw");
-    deleteBtn = new JButton("Delete");
-    deleteBtn.setBackground(new Color(255, 0, 0,50));
-    
-    editRow.add(editBtn);
-    editRow.add(redrawBtn);
-    editRow.add(deleteBtn);
-
-    JPanel saveRow = new JPanel(new GridLayout(1, 2, 5, 0));
-    saveBtn = new JButton("Save");
-    cancelBtn = new JButton("Cancel");
-    saveBtn.setBackground(new Color(144, 238, 144));
-    
-    saveRow.add(saveBtn);
-    saveRow.add(cancelBtn);
-
-    actionWrapper.add(editRow);
-    actionWrapper.add(saveRow);
-
-    //Listeners
-    redrawBtn.setVisible(false);
-    redrawBtn.addActionListener(e -> initiateRedrawFlow());
-    editBtn.addActionListener(e -> setEditMode(true));
-    saveBtn.addActionListener(e -> saveProperty());
-    deleteBtn.addActionListener(e -> deleteProperty());
-    cancelBtn.addActionListener(e -> {
-        setEditMode(false);
-        if (currentProperty != null) populateDetails(currentProperty);
-        else clearFields();
-    });
-
-    //Final 
-    panel.add(topSection, BorderLayout.NORTH);
-    panel.add(centerWrapper, BorderLayout.CENTER);
-    panel.add(actionWrapper, BorderLayout.SOUTH);
-
-    setEditMode(false);
-    return panel;
-}
     /**
      * Initiates the workflow for creating a new property.
      * Steps:
@@ -637,10 +738,6 @@ public class MainWindow extends JFrame {
         mapPanel.setCurrentTool(new NavigationTool());
     }
 
-    // ==============================================================================================
-    // HELPER METHODS
-    // ==============================================================================================
-
     /**
      * Updates the Results Table and the Map visualization with a list of
      * properties.
@@ -742,14 +839,19 @@ public class MainWindow extends JFrame {
                 imageLabel.setText("");
             } else {
                 imageLabel.setIcon(null);
-                imageLabel.setText("Image Data Missing");
+                imageLabel.setText("Image Data corrupted");
             }
         } catch (Exception e) {
             e.printStackTrace();
-            imageLabel.setText("Error");
+            imageLabel.setText("Database Error" + e.getMessage());
         }
     }
 
+    /**
+     * Navigates to the next or previous image in the list.
+     * 
+     * @param direction The direction to navigate (-1 for previous, 1 for next).
+     */
     private void navigateImage(int direction) {
         if (currentImages == null || currentImages.isEmpty())
             return;
@@ -782,7 +884,7 @@ public class MainWindow extends JFrame {
         if (currentImages == null || currentImages.isEmpty())
             return;
 
-        int confirm = JOptionPane.showConfirmDialog(this, "Delete this image?");
+        int confirm = JOptionPane.showConfirmDialog(this, "Delete?");
         if (confirm == JOptionPane.YES_OPTION) {
             PropertyImage img = currentImages.get(currentImageIndex);
             try (Connection conn = DBConnection.getConnection()) {
@@ -795,6 +897,138 @@ public class MainWindow extends JFrame {
                 JOptionPane.showMessageDialog(this, "Delete Failed: " + e.getMessage());
             }
         }
+    }
+
+    private void mirrorImage() {
+        processImageAction("mirror");
+    }
+
+    private void rotateImage() {
+        processImageAction("rotate");
+    }
+
+    private void flipImage() {
+        processImageAction("flip");
+    }
+
+    /**
+     * Helper method to process image manipulation actions.
+     * 
+     * @param action The action command ("mirror", "rotate", "flip").
+     */
+    private void processImageAction(String action) {
+        if (currentImages == null || currentImages.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No image to edit.");
+            return;
+        }
+
+        PropertyImage currentImg = currentImages.get(currentImageIndex);
+        try (Connection conn = DBConnection.getConnection()) { // Re-added connection handling
+            PropertyImageQueries imageQueries = new PropertyImageQueries(conn); // Re-added queries object
+
+            switch (action) {
+                case "rotate":
+                    imageQueries.rotateImage(currentImg.getImageId());
+                    break;
+                case "mirror":
+                    imageQueries.mirrorImage(currentImg.getImageId());
+                    break;
+                case "flip":
+                    imageQueries.flipImage(currentImg.getImageId());
+                    break;
+            }
+            // Refresh image
+            displayCurrentImage(); // Changed from showImage to displayCurrentImage
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error processing image: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Searches for similar images based on the given source image ID and color
+     * histogram weights.
+     * 
+     * @param sourceId The ID of the source image.
+     * @param ac       The weight for Average Color (AC).
+     * @param ch       The weight for Color Histogram (CH).
+     * @param pc       The weight for Positional Color (PC).
+     * @param tx       The weight for Texture (TX).
+     * 
+     * @throws Exception If an error occurs during the search process.
+     */
+    private void searchSimilarImages(Long sourceId, double ac, double ch, double pc, double tx) {
+        try (Connection conn = DBConnection.getConnection()) {
+            PropertyImageQueries imageQueries = new PropertyImageQueries(conn);
+            List<PropertyImage> similarImages = imageQueries.findSimilarImages(sourceId, ac, ch, pc, tx);
+
+            if (similarImages.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No similar images found.");
+                return;
+            }
+
+            JPanel resultsPanel = new JPanel(new GridLayout(0, 3, 10, 10)); // 3 columns
+            for (PropertyImage img : similarImages) {
+                byte[] data = imageQueries.getImageData(img.getImageId());
+                if (data != null) {
+                    ImageIcon icon = new ImageIcon(data);
+                    Image scaled = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                    JLabel lbl = new JLabel(new ImageIcon(scaled));
+                    lbl.setToolTipText("ID: " + img.getImageId() + " - " + img.getImageName());
+                    lbl.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+                    resultsPanel.add(lbl);
+                }
+            }
+
+            JScrollPane scrollPane = new JScrollPane(resultsPanel);
+            scrollPane.setPreferredSize(new Dimension(600, 500));
+            //just use simple Joptionpane
+            JOptionPane.showMessageDialog(this, scrollPane, "Similar Images Results", JOptionPane.PLAIN_MESSAGE);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error searching images: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Handles the upload of a new image for a property.
+     * 
+     * @throws Exception If an error occurs during the upload process.
+     */
+    private void uploadImageAction() {
+        JFileChooser fileChooser = new JFileChooser();
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            Long propertyId = getSelectedPropertyId();
+            if (propertyId == null) {
+                JOptionPane.showMessageDialog(this, "Select a property first.");
+                return;
+            }
+            try (Connection conn = DBConnection.getConnection()) { // Added connection handling
+                PropertyImageQueries imageQueries = new PropertyImageQueries(conn); // Added queries object
+                imageQueries.uploadImage(propertyId, file.getName(), file.getAbsolutePath());
+                JOptionPane.showMessageDialog(this, "Image Uploaded!"); // Added success message
+                loadImages(propertyId); // Changed from loadImagesForProperty to loadImages
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Upload failed: " + ex.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Retrieves the ID of the currently selected property.
+     *
+     * @return The ID of the selected property, or null if no property is selected.
+     */
+    private Long getSelectedPropertyId() {
+
+        if (currentProperty != null) {
+            return currentProperty.getPropertyId();
+        }
+
+        return null;
     }
 
     /**

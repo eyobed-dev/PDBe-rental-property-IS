@@ -2,6 +2,11 @@ package cz.vut.fit.pdbe.xnuriey00.model;
 
 import oracle.spatial.geometry.JGeometry;
 
+/**
+ * Represents a rental property entity.
+ * 
+ * @author eyobed-dev
+ */
 public class Property {
     private Long propertyId;
     private String buildingName;

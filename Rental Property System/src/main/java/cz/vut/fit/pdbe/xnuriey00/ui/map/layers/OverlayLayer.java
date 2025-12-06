@@ -29,12 +29,12 @@ public class OverlayLayer extends MapLayer {
                   try {
                         Shape shape = map.jGeometryToShape(overlay.getGeometry());
 
-                        // Draw interior (semi-transparent)
+                        // Draw interior 
                         Color c = overlay.getColor();
                         graphics.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), 100));
                         graphics.fill(shape);
 
-                        // Draw boundary (solid)
+                        // Draw boundary
                         graphics.setColor(c);
                         // Adjust stroke for zoom
                         float strokeWidth = (float) (2.0 / map.getScale());

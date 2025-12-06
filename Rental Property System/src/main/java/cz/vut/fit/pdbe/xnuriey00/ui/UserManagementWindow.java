@@ -3,6 +3,7 @@ package cz.vut.fit.pdbe.xnuriey00.ui;
 import cz.vut.fit.pdbe.xnuriey00.queries.UserQueries;
 import cz.vut.fit.pdbe.xnuriey00.model.User;
 import cz.vut.fit.pdbe.xnuriey00.util.DBConnection;
+import cz.vut.fit.pdbe.xnuriey00.util.SQLScriptExecutor;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -20,24 +21,27 @@ public class UserManagementWindow extends JFrame {
     // Form Fields
     private JTextField txtId, txtUsername, txtPassword, txtType;
 
-    private JButton btnAdd, btnUpdate, btnDelete, btnClear;
+    private JButton btnAdd, btnUpdate, btnDelete, btnClear, btnReinitializeDB;
 
-    public UserManagementWindow(){
+    public UserManagementWindow() {
 
         super("Admin: User Management");
 
         // Window Setup
         setSize(800, 600);
         setLocationRelativeTo(null); // Center on screen
-        // IMPORTANT: Use DISPOSE_ON_CLOSE so the main app stays open if you close this window
+        // IMPORTANT: Use DISPOSE_ON_CLOSE so the main app stays open if you close this
+        // window
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         setLayout(new BorderLayout());
         // --- Top: Table ---
-        String[] columns = {"ID", "Username", "Password Hash", "Type"};
+        String[] columns = { "ID", "Username", "Password Hash", "Type" };
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) { return false; } // Read-only table
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            } // Read-only table
         };
         table = new JTable(tableModel);
 
@@ -57,15 +61,20 @@ public class UserManagementWindow extends JFrame {
         // --- Bottom: Form & Buttons ---
         JPanel bottomPanel = new JPanel(new GridLayout(5, 2));
 
-        txtId = new JTextField(); txtId.setEditable(false); // ID is read-only
+        txtId = new JTextField();
+        txtId.setEditable(false); // ID is read-only
         txtUsername = new JTextField();
         txtPassword = new JTextField();
         txtType = new JTextField(); // Input "1" for Admin, "0" for User
 
-        bottomPanel.add(new JLabel("ID:")); bottomPanel.add(txtId);
-        bottomPanel.add(new JLabel("Username:")); bottomPanel.add(txtUsername);
-        bottomPanel.add(new JLabel("Password:")); bottomPanel.add(txtPassword);
-        bottomPanel.add(new JLabel("Type (1=Admin, 0=User):")); bottomPanel.add(txtType);
+        bottomPanel.add(new JLabel("ID:"));
+        bottomPanel.add(txtId);
+        bottomPanel.add(new JLabel("Username:"));
+        bottomPanel.add(txtUsername);
+        bottomPanel.add(new JLabel("Password:"));
+        bottomPanel.add(txtPassword);
+        bottomPanel.add(new JLabel("Type (1=Admin, 0=User):"));
+        bottomPanel.add(txtType);
 
         JPanel btnPanel = new JPanel();
         btnAdd = new JButton("Create");
@@ -73,18 +82,35 @@ public class UserManagementWindow extends JFrame {
         btnDelete = new JButton("Delete");
         btnClear = new JButton("Clear Form");
 
-        btnPanel.add(btnAdd); btnPanel.add(btnUpdate); btnPanel.add(btnDelete); btnPanel.add(btnClear);
+        btnPanel.add(btnAdd);
+        btnPanel.add(btnUpdate);
+        btnPanel.add(btnDelete);
+        btnPanel.add(btnClear);
+
+        // Database reinitialization button (admin only)
+        JPanel dbPanel = new JPanel();
+        btnReinitializeDB = new JButton("⚠ Reinitialize Database");
+        btnReinitializeDB.setBackground(new Color(220, 53, 69)); // Red background
+        btnReinitializeDB.setForeground(Color.WHITE);
+        btnReinitializeDB.setFocusPainted(false);
+        dbPanel.add(new JLabel("Admin Actions:"));
+        dbPanel.add(btnReinitializeDB);
 
         JPanel container = new JPanel(new BorderLayout());
         container.add(bottomPanel, BorderLayout.CENTER);
         container.add(btnPanel, BorderLayout.SOUTH);
-        add(container, BorderLayout.SOUTH);
+
+        JPanel southContainer = new JPanel(new BorderLayout());
+        southContainer.add(container, BorderLayout.CENTER);
+        southContainer.add(dbPanel, BorderLayout.SOUTH);
+        add(southContainer, BorderLayout.SOUTH);
 
         // --- Action Listeners ---
         btnAdd.addActionListener(e -> performAction("CREATE"));
         btnUpdate.addActionListener(e -> performAction("UPDATE"));
         btnDelete.addActionListener(e -> performAction("DELETE"));
         btnClear.addActionListener(e -> clearForm());
+        btnReinitializeDB.addActionListener(e -> reinitializeDatabase());
 
         // Load data initially
         loadData();
@@ -96,7 +122,8 @@ public class UserManagementWindow extends JFrame {
             UserQueries dao = new UserQueries(conn);
             List<User> users = dao.getAllUsers();
             for (User u : users) {
-                tableModel.addRow(new Object[]{u.getUserId(), u.getUsername(), u.getPasswordHash(), u.getUserType()});
+                tableModel
+                        .addRow(new Object[] { u.getUserId(), u.getUsername(), u.getPasswordHash(), u.getUserType() });
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -114,18 +141,18 @@ public class UserManagementWindow extends JFrame {
             switch (action) {
                 case "CREATE":
                     dao.createUser(new User(uName, uPass, uType));
-                    conn.commit(); 
+                    conn.commit();
                     break;
                 case "UPDATE":
                     Long id = Long.parseLong(txtId.getText());
                     User u = new User(id, uName, uPass, uType);
                     dao.updateUser(u);
-                    conn.commit(); 
+                    conn.commit();
                     break;
                 case "DELETE":
                     Long delId = Long.parseLong(txtId.getText());
                     dao.deleteUser(delId);
-                    conn.commit(); 
+                    conn.commit();
                     break;
             }
             // Refresh table
@@ -143,5 +170,58 @@ public class UserManagementWindow extends JFrame {
         txtPassword.setText("");
         txtType.setText("");
         table.clearSelection();
+    }
+
+    /**
+     * Reinitializes the database by executing schema.sql.
+     * Shows a confirmation dialog before proceeding as this is a destructive
+     * operation.
+     */
+    private void reinitializeDatabase() {
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "WARNING: This will DROP all tables and DELETE all data!\n" +
+                        "Proceed?",
+                "Confirm Database Reinitialization",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return; // User cancelled
+        }
+
+        try (Connection conn = DBConnection.getConnection()) {
+            List<String> errors = SQLScriptExecutor.executeScript(conn, "schema.sql");
+
+            if (errors.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Database reinitialized",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                StringBuilder errorMsg = new StringBuilder("Database reinitialized with some errors:\n\n");
+                for (String error : errors) {
+                    errorMsg.append("• ").append(error).append("\n");
+                }
+                JOptionPane.showMessageDialog(
+                        this,
+                        errorMsg.toString(),
+                        "Partial Success",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+
+            // Refresh the user table
+            loadData();
+            clearForm();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Failed to reinitialize database:\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

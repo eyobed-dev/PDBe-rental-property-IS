@@ -22,7 +22,7 @@ public class CellularLayer extends MapLayer {
             if (coverages == null)
                   return;
 
-            g.setColor(new Color(0, 255, 0, 50));
+            g.setColor(new Color(0, 255, 0, 20));
 
             for (Cellular coverage : coverages) {
                   try {

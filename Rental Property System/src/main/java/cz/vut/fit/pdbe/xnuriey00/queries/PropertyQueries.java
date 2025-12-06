@@ -9,7 +9,9 @@ import cz.vut.fit.pdbe.xnuriey00.ui.MainWindow;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Handles database operations related to Properties.
@@ -355,5 +357,44 @@ public class PropertyQueries {
                 rs.getString("DESCRIPTION"),
                 rs.getLong("LISTING_USER_ID"),
                 jGeom);
+    }
+
+    /**
+     * Finds properties within a specified distance of any transit stop.
+     * Uses simple query and handles duplicates in Java to avoid Oracle DISTINCT
+     * issues.
+     * 
+     * @param maxDistanceMeters Maximum distance from transit stops in meters
+     * @return List of unique properties within the specified distance
+     * @throws SQLException If a database error occurs
+     */
+    public List<Property> findPropertiesNearTransit(double maxDistanceMeters) throws SQLException {
+        // Use LinkedHashSet to track seen IDs and avoid duplicates
+        Set<Long> seenIds = new LinkedHashSet<>();
+        List<Property> properties = new ArrayList<>();
+
+        // Simple query without DISTINCT - handle duplicates in Java
+        String sql = "SELECT p.PROPERTY_ID, p.BUILDING_NAME, p.ADDRESS, p.UNIT_NUMBER, p.PRICE, " +
+                "p.NUM_BEDROOMS, p.SQUARE_METERS, p.DESCRIPTION, p.LISTING_USER_ID, " +
+                "p.GEOMETRY as GEO_STRUCT " +
+                "FROM PROPERTIES p, TRANSIT_STOPS t " +
+                "WHERE SDO_WITHIN_DISTANCE(p.GEOMETRY, t.GEOMETRY, 'distance=' || ? || ' unit=METER') = 'TRUE'";
+
+        MainWindow.logQuery(sql + " [distance=" + maxDistanceMeters + "m]");
+
+        try (OraclePreparedStatement pstmt = (OraclePreparedStatement) connection.prepareStatement(sql)) {
+            pstmt.setDouble(1, maxDistanceMeters);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Long propertyId = rs.getLong("PROPERTY_ID");
+                    // Only add if we haven't seen this property ID before
+                    if (seenIds.add(propertyId)) {
+                        properties.add(mapResultSetToProperty(rs));
+                    }
+                }
+            }
+        }
+        return properties;
     }
 }

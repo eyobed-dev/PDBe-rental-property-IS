@@ -31,13 +31,16 @@ public class PropertyLayer extends MapLayer {
                   try {
                         Shape shape = map.jGeometryToShape(geom);
 
-                        // Draw interior
-                        g.setColor(new Color(0, 0, 255, 100));
-                        g.fill(shape);
+                        // Draw interior only for Polygons/Circles
+                        if (geom.getType() == JGeometry.GTYPE_POLYGON
+                                    || geom.getType() == JGeometry.GTYPE_MULTIPOLYGON) {
+                              g.setColor(Color.LIGHT_GRAY);
+                              g.fill(shape);
+                        }
 
-                        // Draw boundary
-                        g.setColor(Color.BLUE);
-                        float strokeWidth = (float) (2.0 / scale);
+                        // Draw boundary (or the line itself)
+                        g.setColor(Color.BLACK);
+                        float strokeWidth = (float) (1.0 / scale);
                         g.setStroke(new BasicStroke(strokeWidth));
                         g.draw(shape);
 
@@ -46,7 +49,7 @@ public class PropertyLayer extends MapLayer {
                         double labelX = bounds.getCenterX();
                         double labelY = bounds.getCenterY();
 
-                        Font font = new Font("SansSerif", Font.PLAIN, 12);
+                        Font font = new Font("SansSerif", Font.BOLD, 12);
                         Font derivedFont = font.deriveFont((float) (12.0 / scale));
                         g.setFont(derivedFont);
                         g.setColor(Color.BLACK);
@@ -58,5 +61,30 @@ public class PropertyLayer extends MapLayer {
                         // Ignore
                   }
             }
+
+      }
+
+      public Property findPropertyAt(java.awt.geom.Point2D p, MapPanel map) {
+            if (properties == null)
+                  return null;
+
+            double tolerance = 5.0 / map.getScale(); // 5 pixels tolerance
+            java.awt.geom.Rectangle2D clickArea = new java.awt.geom.Rectangle2D.Double(p.getX() - tolerance / 2,
+                        p.getY() - tolerance / 2, tolerance, tolerance);
+
+            // Iterate in reverse to select top-most (last drawn) first
+            for (int i = properties.size() - 1; i >= 0; i--) {
+                  Property prop = properties.get(i);
+                  JGeometry geom = prop.getJGeometry();
+                  try {
+                        Shape shape = map.jGeometryToShape(geom);
+                        if (shape.intersects(clickArea)) {
+                              return prop;
+                        }
+                  } catch (Exception e) {
+                        // Ignore
+                  }
+            }
+            return null;
       }
 }

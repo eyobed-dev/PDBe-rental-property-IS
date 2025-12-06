@@ -28,9 +28,9 @@ public class TransitLayer extends MapLayer {
                   try {
                         Shape shape = map.jGeometryToShape(stop.getGeometry());
                         g.fill(shape);
-                        g.setColor(Color.BLACK);
+                        g.setColor(Color.ORANGE);
                         g.draw(shape);
-                        g.setColor(Color.ORANGE); // Reset fill color
+                        g.setColor(Color.ORANGE); 
                   } catch (Exception e) {
                         // Ignore invalid geometries
                   }

@@ -1,0 +1,9 @@
+feat: Add spatial features (transit proximity, bike routes) and security enhancements
+
+Spatial Feature: Implemented transit proximity search (SDO_WITHIN_DISTANCE) and a new bike routes module with map visualization.
+Security: Externalized DB credentials to `db.properties` and added an admin utility for database reinitialization.
+Data Model: Migrated `DESCRIPTION` field from CLOB to VARCHAR2(4000) to resolve query issues. Enhanced sample data.
+Schema: Added `CHECK` constraint for `USER_TYPE` and the new `BIKE_ROUTES` table.
+UI/Performance: Integrated new features into the UI and optimized spatial queries.
+
+Migration: Update `db.properties` and reinitialize the database.

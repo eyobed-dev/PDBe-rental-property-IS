@@ -6,11 +6,16 @@ import java.awt.event.MouseWheelEvent;
 
 public interface MapTool {
       void onMousePressed(MouseEvent e, MapPanel map);
+
       void onMouseDragged(MouseEvent e, MapPanel map);
+
       void onMouseReleased(MouseEvent e, MapPanel map);
+
       void onMouseClicked(MouseEvent e, MapPanel map);
+
       void onMouseMoved(MouseEvent e, MapPanel map);
-      //This is everywhere in all tools (zoom in and out) 
+
+      // This is everywhere in all tools (zoom in and out)
       default void onMouseWheelMoved(MouseWheelEvent e, MapPanel map) {
             if (e.getWheelRotation() < 0) {
                   map.zoomIn();
@@ -19,6 +24,7 @@ public interface MapTool {
             }
             map.repaint();
       }
+
       // Allow tools to draw on the map
       default void render(java.awt.Graphics2D g) {
       }

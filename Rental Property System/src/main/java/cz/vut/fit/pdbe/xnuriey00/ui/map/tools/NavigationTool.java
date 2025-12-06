@@ -30,7 +30,7 @@ public class NavigationTool implements MapTool {
 
       @Override
       public void onMouseClicked(MouseEvent e, MapPanel map) {
-            // probably select the property. ignore for now
+            map.selectAt(e.getX(), e.getY());
       }
 
       @Override

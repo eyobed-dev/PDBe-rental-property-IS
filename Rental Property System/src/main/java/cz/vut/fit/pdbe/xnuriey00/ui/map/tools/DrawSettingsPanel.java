@@ -9,7 +9,9 @@ public class DrawSettingsPanel extends JPanel {
       private JComboBox<GeometryType> typeCombo;
       private JCheckBox holeCheckBox;
       private JButton finishBtn;
+      private JButton resetBtn;
       private Runnable onFinishCallback;
+      private Runnable onResetCallback;
 
       public DrawSettingsPanel() {
             setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -36,6 +38,16 @@ public class DrawSettingsPanel extends JPanel {
             });
             add(finishBtn);
 
+            // Reset Button (Manual Clear)
+            resetBtn = new JButton("Reset");
+            resetBtn.setBackground(new Color(200, 200, 255)); // Bluish color
+            resetBtn.addActionListener(e -> {
+                  if (onResetCallback != null) {
+                        onResetCallback.run();
+                  }
+            });
+            add(resetBtn);
+
             // Listeners to update UI state
             typeCombo.addActionListener(e -> updateUIState());
             updateUIState();
@@ -43,7 +55,8 @@ public class DrawSettingsPanel extends JPanel {
 
       private void updateUIState() {
             GeometryType type = (GeometryType) typeCombo.getSelectedItem();
-            boolean isPoly = type == GeometryType.POLYGON || type == GeometryType.MULTI_POLYGON;
+            boolean isPoly = type == GeometryType.POLYGON || type == GeometryType.MULTI_POLYGON
+                        || type == GeometryType.CIRCLE;
             holeCheckBox.setEnabled(isPoly);
             if (!isPoly) {
                   holeCheckBox.setSelected(false);
@@ -60,6 +73,10 @@ public class DrawSettingsPanel extends JPanel {
 
       public void setOnFinishCallback(Runnable callback) {
             this.onFinishCallback = callback;
+      }
+
+      public void setOnResetCallback(Runnable callback) {
+            this.onResetCallback = callback;
       }
 
       public void addTypeChangeListener(ActionListener l) {

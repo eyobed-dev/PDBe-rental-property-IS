@@ -12,12 +12,16 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class MapPanel extends JPanel {
+
+    // Selection Listeners
+    private List<Consumer<Property>> selectionListeners = new ArrayList<>();
 
     // Layers list
     private List<MapLayer> layers = new ArrayList<>();
@@ -34,14 +38,15 @@ public class MapPanel extends JPanel {
     private SchoolLayer schoolLayer;
     private TransitLayer transitLayer;
     private CellularLayer cellularLayer;
+    private BikeRouteLayer bikeRouteLayer;
 
     // Viewport State
-    private double scale = 10.0;
+    private double scale = 1.0;
     private double offsetX = 0;
     private double offsetY = 0;
 
     public MapPanel() {
-        setBackground(new Color(194, 236, 255));
+        setBackground(Color.WHITE);
         setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
         // Initialize Layers
@@ -52,6 +57,7 @@ public class MapPanel extends JPanel {
         schoolLayer = new SchoolLayer();
         transitLayer = new TransitLayer();
         cellularLayer = new CellularLayer();
+        bikeRouteLayer = new BikeRouteLayer();
 
         // Add layers to the list
         layers.add(gridLayer);
@@ -61,11 +67,12 @@ public class MapPanel extends JPanel {
         layers.add(schoolLayer);
         layers.add(transitLayer);
         layers.add(cellularLayer);
+        layers.add(bikeRouteLayer);
 
         // Initialize Tool
         currentTool = new NavigationTool();
 
-        // Mouse Listeners for the tool to handle mouse events  
+        // Mouse Listeners for the tool to handle mouse events
         // The MapPanel forwards all mouse events to whichever tool is currently active
         MouseAdapter mouseHandler = new MouseAdapter() {
             @Override
@@ -131,6 +138,11 @@ public class MapPanel extends JPanel {
         repaint();
     }
 
+    public void setBikeRoutes(List<BikeRoute> routes) {
+        bikeRouteLayer.setRoutes(routes);
+        repaint();
+    }
+
     // Setters for the tool to update the current tool
     public void setCurrentTool(MapTool tool) {
         this.currentTool = tool;
@@ -189,7 +201,7 @@ public class MapPanel extends JPanel {
         graphics.translate(offsetX, offsetY);
         graphics.scale(scale, scale);
 
-        // Render Layers
+        // Render Layers by passing the graphics and map to the layer sequentially
         for (MapLayer layer : layers) {
             if (layer.isVisible()) {
                 layer.render(graphics, this);
@@ -216,14 +228,17 @@ public class MapPanel extends JPanel {
      */
     public Shape point2dToShape(Point2D point2D) {
         // Fixed screen size . looks good on my pc,
-        double screenPixelSize = 10.0;
-        double worldSize = screenPixelSize / scale;
-        return new Rectangle2D.Double(point2D.getX() - (worldSize / 2), point2D.getY() - (worldSize / 2), worldSize,
-                worldSize);
+        return new Ellipse2D.Double(point2D.getX() - 8, point2D.getY() - 8, 16, 16);
     }
 
     /**
-     * Make a Shape object from a JGeometry object.
+     * Make a Shape object from a JGeometry object (the Java representation of
+     * SDO_GEOMETRY data). The
+     * Shape objects are drawable into Java GUI.
+     *
+     * @param jGeometry the JGeometry object as an input
+     * @return the Shape object corresponding to the input JGeometry object
+     * @throws Exception if cannot make the Shape object from the JGeometry object
      */
     public Shape jGeometryToShape(JGeometry jGeometry) throws Exception {
         switch (jGeometry.getType()) {
@@ -248,6 +263,29 @@ public class MapPanel extends JPanel {
 
     public List<MapLayer> getLayers() {
         return layers;
+    }
+
+    // Selection Handling
+    public void addSelectionListener(Consumer<Property> listener) {
+        selectionListeners.add(listener);
+    }
+
+    public void selectAt(int screenX, int screenY) {
+        // Convert screen to world coordinates
+        double worldX = (screenX - offsetX) / scale;
+        double worldY = (screenY - offsetY) / scale;
+        Point2D worldPoint = new Point2D.Double(worldX, worldY);
+
+        // Check Property Layer
+        if (propertyLayer.isVisible()) {
+            Property prop = propertyLayer.findPropertyAt(worldPoint, this);
+            if (prop != null) {
+                // Notify listeners
+                for (Consumer<Property> listener : selectionListeners) {
+                    listener.accept(prop);
+                }
+            }
+        }
     }
 
     // Overlay Class (I keep it here for now)

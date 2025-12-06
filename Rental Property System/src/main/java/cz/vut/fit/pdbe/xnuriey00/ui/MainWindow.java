@@ -5,9 +5,7 @@ import cz.vut.fit.pdbe.xnuriey00.model.*;
 import cz.vut.fit.pdbe.xnuriey00.queries.*;
 import cz.vut.fit.pdbe.xnuriey00.ui.map.MapControlPanel;
 import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
-import cz.vut.fit.pdbe.xnuriey00.ui.map.tools.DrawSettingsPanel;
-import cz.vut.fit.pdbe.xnuriey00.ui.map.tools.DrawTool;
-import cz.vut.fit.pdbe.xnuriey00.ui.map.tools.NavigationTool;
+import cz.vut.fit.pdbe.xnuriey00.ui.map.tools.*;
 import cz.vut.fit.pdbe.xnuriey00.util.DBConnection;
 import cz.vut.fit.pdbe.xnuriey00.util.UserSession;
 import oracle.spatial.geometry.JGeometry;
@@ -26,7 +24,7 @@ import java.util.List;
 /**
  * The main application window.
  * Handles the primary UI layout, map integration, property management, and
- * image operations.
+ * image operations. too much but finished
  * 
  * @author eyobed-dev
  */
@@ -34,6 +32,7 @@ public class MainWindow extends JFrame {
 
     private JTextField searchField; // Text field for keyword searching properties.
     private JSlider priceSlider; // Slider to filter properties by maximum price.
+    private JSlider transitDistanceSlider; // Slider for transit proximity distance.
     private JTable table; // Table to display search results.
     private DefaultTableModel tableModel; // The data model backing the results table.
 
@@ -195,12 +194,16 @@ public class MainWindow extends JFrame {
         relPanel.add(priceLabel);
         relPanel.add(priceSlider);
 
-        // spatial Search Panel
-        JPanel spatPanel = new JPanel(new GridLayout(1, 1)); // Single cell grid for full expansion
+        // Spatial Search Panel
+        JPanel spatPanel = new JPanel();
+        spatPanel.setLayout(new BoxLayout(spatPanel, BoxLayout.Y_AXIS));
         spatPanel.setBorder(BorderFactory.createTitledBorder("Spatial Search"));
 
-        JButton drawBtn = new JButton("\uD83D\uDDFA\uFE0F Draw Area");
+        // Draw Area Button
+        JButton drawBtn = new JButton("🗺️ Draw Area");
         drawBtn.setBackground(new Color(144, 229, 255));
+        drawBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        drawBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
         drawBtn.addActionListener(e -> {
             if (mapPanel != null) {
                 drawSettingsPanel.setVisible(true);
@@ -208,7 +211,33 @@ public class MainWindow extends JFrame {
                 JOptionPane.showMessageDialog(this, "Draw a polygon/circle on the map.");
             }
         });
+
+        // Transit Distance Slider
+        JLabel transitDistanceLabel = new JLabel("Transit Distance: 500m");
+        transitDistanceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        transitDistanceSlider = new JSlider(100, 1000, 500);
+        transitDistanceSlider.setMajorTickSpacing(450);
+        transitDistanceSlider.setMinorTickSpacing(450);
+        transitDistanceSlider.setPaintTicks(true);
+        transitDistanceSlider.setSnapToTicks(true);
+        transitDistanceSlider.addChangeListener(e -> {
+            int value = transitDistanceSlider.getValue();
+            transitDistanceLabel.setText("Transit Distance: " + value + "m");
+        });
+
+        // Near Transit Button
+        JButton nearTransitBtn = new JButton("🚇 Near Transit");
+        nearTransitBtn.setBackground(new Color(144, 238, 144)); // Light green
+        nearTransitBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        nearTransitBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        nearTransitBtn.addActionListener(e -> filterPropertiesNearTransit());
+
         spatPanel.add(drawBtn);
+        spatPanel.add(Box.createVerticalStrut(10));
+        spatPanel.add(transitDistanceLabel);
+        spatPanel.add(transitDistanceSlider);
+        spatPanel.add(Box.createVerticalStrut(5));
+        spatPanel.add(nearTransitBtn);
 
         // Multimedia Search Pane
         JPanel mediaPanel = new JPanel(new GridLayout(0, 2, 5, 5)); // 2 columns, auto rows
@@ -262,6 +291,7 @@ public class MainWindow extends JFrame {
         resetBtn.addActionListener(e -> {
             searchField.setText("Search");
             priceSlider.setValue(5000);
+            transitDistanceSlider.setValue(500);
             mapPanel.clearOverlays();
             clearFields();
             loadEverything();
@@ -287,7 +317,7 @@ public class MainWindow extends JFrame {
                     allProperties.stream()
                             .filter(p -> p.getPropertyId().equals(id))
                             .findFirst()
-                            .ifPresent(this::populateDetails);
+                            .ifPresent(this::selectProperty);
                 }
             }
         });
@@ -306,6 +336,7 @@ public class MainWindow extends JFrame {
      */
     private JPanel createCenterMapPanel() {
         mapPanel = new MapPanel();
+        mapPanel.addSelectionListener(this::selectProperty);
         JPanel mapContainer = new JPanel(new BorderLayout());
         mapContainer.add(mapPanel, BorderLayout.CENTER);
 
@@ -329,8 +360,6 @@ public class MainWindow extends JFrame {
         JScrollPane logScroll = new JScrollPane(logArea);
         logScroll.setBorder(BorderFactory.createTitledBorder("SQL Query Log"));
 
-        // Add log area to the bottom of the map container
-        // We need to wrap the bottomPanel and logScroll together
         JPanel southContainer = new JPanel(new BorderLayout());
         southContainer.add(bottomPanel, BorderLayout.NORTH);
         southContainer.add(logScroll, BorderLayout.CENTER);
@@ -547,8 +576,12 @@ public class MainWindow extends JFrame {
                 drawSettingsPanel.setVisible(false);
                 mapPanel.clearOverlays();
                 mapPanel.addOverlay(geometry, new Color(0, 255, 0, 100), "New Area");
-                mapPanel.setCurrentTool(new NavigationTool());
-                JOptionPane.showMessageDialog(this, "New area captured! Click Save to apply changes.");
+
+                // Update current property geometry immediately for visual feedback
+                currentProperty.setJGeometry(geometry);
+                mapPanel.setCurrentTool(new EditTool(currentProperty)); // Switch back to EditTool
+
+                JOptionPane.showMessageDialog(this, "New area captured! You can now adjust it or click Save.");
             }));
         }
     }
@@ -671,18 +704,21 @@ public class MainWindow extends JFrame {
             SchoolQueries schoolQueries = new SchoolQueries(conn);
             TransitQueries transitQueries = new TransitQueries(conn);
             CellularQueries cellularQueries = new CellularQueries(conn);
+            BikeRouteQueries bikeRouteQueries = new BikeRouteQueries(conn);
 
             // Fetch Data
             List<Property> properties = propertyQueries.getAllProperties();
             List<School> schools = schoolQueries.getAll();
             List<Transit> stops = transitQueries.getAll();
             List<Cellular> coverages = cellularQueries.getAll();
+            List<BikeRoute> routes = bikeRouteQueries.getAll();
 
             // Update UI components
             updateView(properties); // Updates Table and Map Property Layer
             mapPanel.setSchools(schools);
             mapPanel.setTransitStops(stops);
             mapPanel.setCellularCoverage(coverages);
+            mapPanel.setBikeRoutes(routes);
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -735,6 +771,33 @@ public class MainWindow extends JFrame {
         mapPanel.addOverlay(geometry, new Color(255, 0, 0, 50), "Search Area");
 
         // 3. Reset Tool
+        mapPanel.setCurrentTool(new NavigationTool());
+    }
+
+    /**
+     * Filters properties based on proximity to transit stops.
+     * Uses the distance value from the transit distance slider.
+     */
+    private void filterPropertiesNearTransit() {
+        double distance = transitDistanceSlider.getValue();
+
+        try (Connection conn = DBConnection.getConnection()) {
+            PropertyQueries queries = new PropertyQueries(conn);
+            List<Property> props = queries.findPropertiesNearTransit(distance);
+            updateView(props);
+
+            String message = "Found " + props.size() + " properties within " +
+                    (int) distance + "m of transit stops.";
+            JOptionPane.showMessageDialog(this, message);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error searching near transit: " + ex.getMessage());
+        }
+
+        // Clear any existing overlays
+        mapPanel.clearOverlays();
+
+        // Reset tool to navigation
         mapPanel.setCurrentTool(new NavigationTool());
     }
 
@@ -982,7 +1045,7 @@ public class MainWindow extends JFrame {
 
             JScrollPane scrollPane = new JScrollPane(resultsPanel);
             scrollPane.setPreferredSize(new Dimension(600, 500));
-            //just use simple Joptionpane
+            // just use simple Joptionpane
             JOptionPane.showMessageDialog(this, scrollPane, "Similar Images Results", JOptionPane.PLAIN_MESSAGE);
 
         } catch (Exception e) {
@@ -1054,6 +1117,15 @@ public class MainWindow extends JFrame {
 
         saveBtn.setVisible(editable);
         cancelBtn.setVisible(editable);
+
+        // Switch Tools
+        if (mapPanel != null) {
+            if (editable && !isCreating && currentProperty != null) {
+                mapPanel.setCurrentTool(new EditTool(currentProperty));
+            } else {
+                mapPanel.setCurrentTool(new NavigationTool());
+            }
+        }
     }
 
     /**
@@ -1066,6 +1138,27 @@ public class MainWindow extends JFrame {
         bedsField.setText("");
         areaField.setText("");
         descArea.setText("");
+    }
+
+    /**
+     * Selects a property, updates the details panel, and syncs the table selection.
+     * 
+     * @param p The property to select.
+     */
+    private void selectProperty(Property p) {
+        populateDetails(p);
+
+        // Sync Table Selection if not already selected
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            Long id = (Long) tableModel.getValueAt(i, 0);
+            if (id.equals(p.getPropertyId())) {
+                if (table.getSelectedRow() != i) {
+                    table.setRowSelectionInterval(i, i);
+                    table.scrollRectToVisible(table.getCellRect(i, 0, true));
+                }
+                break;
+            }
+        }
     }
 
 }

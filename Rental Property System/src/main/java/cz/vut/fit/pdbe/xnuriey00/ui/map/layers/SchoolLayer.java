@@ -21,16 +21,15 @@ public class SchoolLayer extends MapLayer {
       public void render(Graphics2D g, MapPanel map) {
             if (areas == null)
                   return;
-
-            g.setColor(new Color(0, 0, 255, 50)); // Transparent Blue
+            g.setColor(new Color(255, 0, 0, 10)); // Transparent Blue
 
             for (School area : areas) {
                   try {
                         Shape shape = map.jGeometryToShape(area.getGeometry());
                         g.fill(shape);
-                        g.setColor(Color.BLUE);
+                        g.setColor(Color.RED);
                         g.draw(shape);
-                        g.setColor(new Color(0, 0, 255, 50)); // Reset fill color
+                        g.setColor(new Color(255, 0, 0, 50)); // Reset fill color
                   } catch (Exception e) {
                         // Ignore invalid geometries
                   }

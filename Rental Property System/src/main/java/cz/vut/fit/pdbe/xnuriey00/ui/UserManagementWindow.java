@@ -11,6 +11,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -88,11 +89,17 @@ public class UserManagementWindow extends JFrame {
 
         // Database reinitialization button (admin only)
         JPanel dbPanel = new JPanel();
+
+        JButton btnDatabaseConfig = new JButton("Database Config");
+        btnDatabaseConfig.addActionListener(e -> showDatabaseConfigDialog());
+
         btnReinitializeDB = new JButton("⚠ Reinitialize Database");
         btnReinitializeDB.setBackground(new Color(255, 0, 23, 255)); // Red background
         btnReinitializeDB.setForeground(Color.WHITE);
         btnReinitializeDB.setFocusPainted(false);
+
         dbPanel.add(new JLabel("Admin Actions:"));
+        dbPanel.add(btnDatabaseConfig);
         dbPanel.add(btnReinitializeDB);
 
         JPanel container = new JPanel(new BorderLayout());
@@ -236,5 +243,97 @@ public class UserManagementWindow extends JFrame {
 
         // Restart the application
         SwingUtilities.invokeLater(Main::launch);
+    }
+
+    /**
+     * Shows a dialog to edit database configuration (db.properties).
+     */
+    private void showDatabaseConfigDialog() {
+        try {
+            // Load current properties
+            java.util.Properties props = new java.util.Properties();
+            try (java.io.InputStream input = getClass().getClassLoader().getResourceAsStream("db.properties")) {
+                if (input != null) {
+                    props.load(input);
+                }
+            }
+
+            // Create dialog
+            JDialog dialog = new JDialog(this, "Database Configuration", true);
+            dialog.setLayout(new BorderLayout());
+            dialog.setSize(500, 250);
+            dialog.setLocationRelativeTo(this);
+
+            // Form panel
+            JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+            // some padding
+            formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+            JTextField urlField = new JTextField(props.getProperty("db.url", ""));
+            JTextField usernameField = new JTextField(props.getProperty("db.username", ""));
+            JPasswordField passwordField = new JPasswordField(props.getProperty("db.password", ""));
+
+            formPanel.add(new JLabel("Database URL:"));
+            formPanel.add(urlField);
+            formPanel.add(new JLabel("Username:"));
+            formPanel.add(usernameField);
+            formPanel.add(new JLabel("Password:"));
+            formPanel.add(passwordField);
+
+            // Button panel
+            JPanel buttonPanel = new JPanel();
+            JButton saveButton = new JButton("Save");
+            JButton cancelButton = new JButton("Cancel");
+
+            saveButton.addActionListener(e -> {
+                try {
+                    // Get the file path from classpath
+                    java.net.URL resource = getClass().getClassLoader().getResource("db.properties");
+                    if (resource == null) {
+                        throw new Exception("db.properties file not found");
+                    }
+
+                    // Convert URL to file path, handling spaces and special characters
+                    java.io.File file = new java.io.File(resource.toURI());
+
+                    // Update properties
+                    props.setProperty("db.url", urlField.getText());
+                    props.setProperty("db.username", usernameField.getText());
+                    props.setProperty("db.password", new String(passwordField.getPassword()));
+
+                    // Save to file
+                    try (FileOutputStream output = new FileOutputStream(file)) {
+                        props.store(output, "");
+                    }
+
+                    JOptionPane.showMessageDialog(dialog,
+                            "Database credentials saved successfully.\nRestart the application.",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Error saving credentials:\n" + ex.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            });
+
+            cancelButton.addActionListener(e -> dialog.dispose());
+
+            buttonPanel.add(saveButton);
+            buttonPanel.add(cancelButton);
+
+            dialog.add(formPanel, BorderLayout.CENTER);
+            dialog.add(buttonPanel, BorderLayout.SOUTH);
+            dialog.setVisible(true);
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error loading database configuration:\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

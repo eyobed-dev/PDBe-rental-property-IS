@@ -30,10 +30,33 @@ public class TransitLayer extends MapLayer {
                         g.fill(shape);
                         g.setColor(Color.ORANGE);
                         g.draw(shape);
-                        g.setColor(Color.ORANGE); 
+                        g.setColor(Color.ORANGE);
                   } catch (Exception e) {
                         // Ignore invalid geometries
                   }
             }
+      }
+
+      @Override
+      public cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity findEntityAt(java.awt.geom.Point2D p, MapPanel map) {
+            if (stops == null)
+                  return null;
+
+            double tolerance = 5.0 / map.getScale();
+            java.awt.geom.Rectangle2D clickArea = new java.awt.geom.Rectangle2D.Double(p.getX() - tolerance / 2,
+                        p.getY() - tolerance / 2, tolerance, tolerance);
+
+            for (int i = stops.size() - 1; i >= 0; i--) {
+                  Transit stop = stops.get(i);
+                  try {
+                        Shape shape = map.jGeometryToShape(stop.getGeometry());
+                        if (shape.intersects(clickArea)) {
+                              return stop;
+                        }
+                  } catch (Exception e) {
+                        // Ignore
+                  }
+            }
+            return null;
       }
 }

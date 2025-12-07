@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 public class MapPanel extends JPanel {
 
     // Selection Listeners
-    private List<Consumer<Property>> selectionListeners = new ArrayList<>();
+    private List<Consumer<cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity>> selectionListeners = new ArrayList<>();
 
     // Layers list
     private List<MapLayer> layers = new ArrayList<>();
@@ -59,15 +59,18 @@ public class MapPanel extends JPanel {
         cellularLayer = new CellularLayer();
         bikeRouteLayer = new BikeRouteLayer();
 
-        // Add layers to the list
+        // Add layers to the list (order matters - first = bottom, last = top)
         layers.add(gridLayer);
-        layers.add(overlayLayer);
 
+        // Data layers
         layers.add(propertyLayer);
         layers.add(schoolLayer);
         layers.add(transitLayer);
         layers.add(cellularLayer);
         layers.add(bikeRouteLayer);
+
+        // Overlay layer MUST be last so it renders on top
+        layers.add(overlayLayer);
 
         // Initialize Tool
         currentTool = new NavigationTool();
@@ -266,7 +269,7 @@ public class MapPanel extends JPanel {
     }
 
     // Selection Handling
-    public void addSelectionListener(Consumer<Property> listener) {
+    public void addSelectionListener(Consumer<cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity> listener) {
         selectionListeners.add(listener);
     }
 
@@ -276,13 +279,17 @@ public class MapPanel extends JPanel {
         double worldY = (screenY - offsetY) / scale;
         Point2D worldPoint = new Point2D.Double(worldX, worldY);
 
-        // Check Property Layer
-        if (propertyLayer.isVisible()) {
-            Property prop = propertyLayer.findPropertyAt(worldPoint, this);
-            if (prop != null) {
-                // Notify listeners
-                for (Consumer<Property> listener : selectionListeners) {
-                    listener.accept(prop);
+        // Iterate through layers in reverse order (top to bottom)
+        for (int i = layers.size() - 1; i >= 0; i--) {
+            MapLayer layer = layers.get(i);
+            if (layer.isVisible()) {
+                cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity entity = layer.findEntityAt(worldPoint, this);
+                if (entity != null) {
+                    // Notify listeners
+                    for (Consumer<cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity> listener : selectionListeners) {
+                        listener.accept(entity);
+                    }
+                    return; // Stop after finding the top-most entity
                 }
             }
         }

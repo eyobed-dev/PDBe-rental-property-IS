@@ -7,7 +7,7 @@ import oracle.spatial.geometry.JGeometry;
  * 
  * @author eyobed-dev
  */
-public class Property {
+public class Property implements SpatialEntity {
     private Long propertyId;
     private String buildingName;
     private String address;
@@ -37,8 +37,18 @@ public class Property {
     }
 
     // Getters
+    @Override
+    public Long getId() {
+        return propertyId;
+    }
+
     public Long getPropertyId() {
         return propertyId;
+    }
+
+    @Override
+    public String getName() {
+        return buildingName;
     }
 
     public String getBuildingName() {
@@ -73,6 +83,11 @@ public class Property {
         return listingUserId;
     }
 
+    @Override
+    public JGeometry getGeometry() {
+        return jGeometry;
+    }
+
     public JGeometry getJGeometry() {
         return jGeometry;
     }
@@ -80,6 +95,11 @@ public class Property {
     // Setters
     public void setPropertyId(Long propertyId) {
         this.propertyId = propertyId;
+    }
+
+    @Override
+    public void setId(Long id) {
+        this.propertyId = id;
     }
 
     public void setBuildingName(String buildingName) {
@@ -112,6 +132,11 @@ public class Property {
 
     public void setListingUserId(Long listingUserId) {
         this.listingUserId = listingUserId;
+    }
+
+    @Override
+    public void setGeometry(JGeometry geometry) {
+        this.jGeometry = geometry;
     }
 
     public void setJGeometry(JGeometry jGeometry) {

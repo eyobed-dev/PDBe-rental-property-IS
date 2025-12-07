@@ -1,17 +1,39 @@
 package cz.vut.fit.pdbe.xnuriey00.model;
 
+/**
+ * Represents a user in the system.
+ * This class stores user details such as ID, username, password hash, and user type.
+ * @author eyobed-dev
+ */
 public class User {
     private Long userId;
     private String username;
     private String passwordHash;
     private String userType;
 
+    /**
+     * Constructs a new User without a specified user ID.
+     * This constructor is typically used when creating a new user before it's persisted to a database.
+     *
+     * @param username The username of the user.
+     * @param passwordHash The hashed password of the user.
+     * @param userType The type of user.
+     */
     public User(String username, String passwordHash, String userType) {
         this.username = username;
         this.passwordHash = passwordHash;
         this.userType = userType;
     }
 
+    /**
+     * Constructs a new User with all details, including the user ID.
+     * This constructor is typically used when retrieving an existing user from a database.
+     *
+     * @param userId The unique identifier for the user.
+     * @param username The username of the user.
+     * @param passwordHash The hashed password of the user.
+     * @param userType The type of user.
+     */
     public User(Long userId, String username, String passwordHash, String userType) {
         this.userId = userId;
         this.username = username;

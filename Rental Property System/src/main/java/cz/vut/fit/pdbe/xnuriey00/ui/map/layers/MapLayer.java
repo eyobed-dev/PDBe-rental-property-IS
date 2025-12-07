@@ -25,4 +25,6 @@ public abstract class MapLayer {
       }
 
       public abstract void render(Graphics2D g, MapPanel map);
+
+      public abstract cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity findEntityAt(java.awt.geom.Point2D p, MapPanel map);
 }

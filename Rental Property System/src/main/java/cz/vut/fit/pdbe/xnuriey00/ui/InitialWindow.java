@@ -66,7 +66,7 @@ public class InitialWindow extends JFrame {
 
             User foundUser = userQuery.findByUsernameAndPassword(user, pass);
 
-            if (true) {
+            if (foundUser != null) {
                 UserSession.getInstance().setCurrentUser(foundUser);
                 new MainWindow().setVisible(true);
                 this.dispose();

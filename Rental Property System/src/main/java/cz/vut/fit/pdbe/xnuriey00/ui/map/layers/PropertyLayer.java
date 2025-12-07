@@ -64,7 +64,8 @@ public class PropertyLayer extends MapLayer {
 
       }
 
-      public Property findPropertyAt(java.awt.geom.Point2D p, MapPanel map) {
+      @Override
+      public cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity findEntityAt(java.awt.geom.Point2D p, MapPanel map) {
             if (properties == null)
                   return null;
 

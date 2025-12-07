@@ -22,18 +22,39 @@ public class CellularLayer extends MapLayer {
             if (coverages == null)
                   return;
 
-            g.setColor(new Color(0, 255, 0, 20));
+            g.setColor(new Color(109, 197, 250, 39));
 
             for (Cellular coverage : coverages) {
                   try {
                         Shape shape = map.jGeometryToShape(coverage.getGeometry());
                         g.fill(shape);
-                        g.setColor(Color.GREEN);
                         g.draw(shape);
-                        g.setColor(new Color(0, 255, 0, 50));
                   } catch (Exception e) {
                         // Ignore invalid geometries
                   }
             }
+      }
+
+      @Override
+      public cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity findEntityAt(java.awt.geom.Point2D p, MapPanel map) {
+            if (coverages == null)
+                  return null;
+
+            double tolerance = 5.0 / map.getScale();
+            java.awt.geom.Rectangle2D clickArea = new java.awt.geom.Rectangle2D.Double(p.getX() - tolerance / 2,
+                        p.getY() - tolerance / 2, tolerance, tolerance);
+
+            for (int i = coverages.size() - 1; i >= 0; i--) {
+                  Cellular coverage = coverages.get(i);
+                  try {
+                        Shape shape = map.jGeometryToShape(coverage.getGeometry());
+                        if (shape.intersects(clickArea)) {
+                              return coverage;
+                        }
+                  } catch (Exception e) {
+                        // Ignore
+                  }
+            }
+            return null;
       }
 }

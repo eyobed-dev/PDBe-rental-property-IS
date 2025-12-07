@@ -1,6 +1,6 @@
 package cz.vut.fit.pdbe.xnuriey00.ui.map.tools;
 
-import cz.vut.fit.pdbe.xnuriey00.model.Property;
+import cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity;
 import cz.vut.fit.pdbe.xnuriey00.ui.map.MapPanel;
 import oracle.spatial.geometry.JGeometry;
 
@@ -8,13 +8,13 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 
 public class EditTool implements MapTool {
-      private Property property;
+      private SpatialEntity entity;
       private int lastMouseX;
       private int lastMouseY;
       private boolean isDragging = false;
 
-      public EditTool(Property property) {
-            this.property = property;
+      public EditTool(SpatialEntity entity) {
+            this.entity = entity;
       }
 
       @Override
@@ -26,7 +26,7 @@ public class EditTool implements MapTool {
 
       @Override
       public void onMouseDragged(MouseEvent e, MapPanel map) {
-            if (!isDragging || property == null)
+            if (!isDragging || entity == null)
                   return;
 
             int dx = e.getX() - lastMouseX;
@@ -37,9 +37,9 @@ public class EditTool implements MapTool {
             double worldDy = dy / map.getScale();
 
             // Update Geometry
-            JGeometry geom = property.getJGeometry();
+            JGeometry geom = entity.getGeometry();
             JGeometry newGeom = translate(geom, worldDx, worldDy);
-            property.setJGeometry(newGeom);
+            entity.setGeometry(newGeom);
 
             lastMouseX = e.getX();
             lastMouseY = e.getY();

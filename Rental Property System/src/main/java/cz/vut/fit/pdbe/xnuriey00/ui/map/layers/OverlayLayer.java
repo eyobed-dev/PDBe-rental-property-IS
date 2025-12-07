@@ -29,7 +29,7 @@ public class OverlayLayer extends MapLayer {
                   try {
                         Shape shape = map.jGeometryToShape(overlay.getGeometry());
 
-                        // Draw interior 
+                        // Draw interior
                         Color c = overlay.getColor();
                         graphics.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), 100));
                         graphics.fill(shape);
@@ -58,5 +58,10 @@ public class OverlayLayer extends MapLayer {
                         System.err.println("Error drawing overlay: " + e.getMessage());
                   }
             }
+      }
+
+      @Override
+      public cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity findEntityAt(java.awt.geom.Point2D p, MapPanel map) {
+            return null;
       }
 }

@@ -42,4 +42,9 @@ public class GridLayer extends MapLayer {
                   g.draw(new Line2D.Double(minWorldX, y, maxWorldX, y));
             }
       }
+
+      @Override
+      public cz.vut.fit.pdbe.xnuriey00.model.SpatialEntity findEntityAt(java.awt.geom.Point2D p, MapPanel map) {
+            return null;
+      }
 }

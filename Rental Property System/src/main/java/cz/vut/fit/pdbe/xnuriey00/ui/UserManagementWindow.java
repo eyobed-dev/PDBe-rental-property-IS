@@ -1,5 +1,6 @@
 package cz.vut.fit.pdbe.xnuriey00.ui;
 
+import cz.vut.fit.pdbe.xnuriey00.Main;
 import cz.vut.fit.pdbe.xnuriey00.queries.UserQueries;
 import cz.vut.fit.pdbe.xnuriey00.model.User;
 import cz.vut.fit.pdbe.xnuriey00.util.DBConnection;
@@ -30,12 +31,11 @@ public class UserManagementWindow extends JFrame {
         // Window Setup
         setSize(800, 600);
         setLocationRelativeTo(null); // Center on screen
-        // IMPORTANT: Use DISPOSE_ON_CLOSE so the main app stays open if you close this
-        // window
+        // so the main app stays open if I close this window
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         setLayout(new BorderLayout());
-        // --- Top: Table ---
+        // --- Top Table ---
         String[] columns = { "ID", "Username", "Password Hash", "Type" };
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -57,15 +57,14 @@ public class UserManagementWindow extends JFrame {
         });
 
         add(new JScrollPane(table), BorderLayout.CENTER);
-
-        // --- Bottom: Form & Buttons ---
+        // --- Bottom Form and Buttons ---
         JPanel bottomPanel = new JPanel(new GridLayout(5, 2));
 
         txtId = new JTextField();
-        txtId.setEditable(false); // ID is read-only
+        txtId.setEditable(false); // ID is read only
         txtUsername = new JTextField();
         txtPassword = new JTextField();
-        txtType = new JTextField(); // Input "1" for Admin, "0" for User
+        txtType = new JTextField(); // 1 for admin, 0 for user
 
         bottomPanel.add(new JLabel("ID:"));
         bottomPanel.add(txtId);
@@ -73,7 +72,7 @@ public class UserManagementWindow extends JFrame {
         bottomPanel.add(txtUsername);
         bottomPanel.add(new JLabel("Password:"));
         bottomPanel.add(txtPassword);
-        bottomPanel.add(new JLabel("Type (1=Admin, 0=User):"));
+        bottomPanel.add(new JLabel("Type 1 for admin, 0 for user:"));
         bottomPanel.add(txtType);
 
         JPanel btnPanel = new JPanel();
@@ -90,7 +89,7 @@ public class UserManagementWindow extends JFrame {
         // Database reinitialization button (admin only)
         JPanel dbPanel = new JPanel();
         btnReinitializeDB = new JButton("⚠ Reinitialize Database");
-        btnReinitializeDB.setBackground(new Color(220, 53, 69)); // Red background
+        btnReinitializeDB.setBackground(new Color(255, 0, 23, 255)); // Red background
         btnReinitializeDB.setForeground(Color.WHITE);
         btnReinitializeDB.setFocusPainted(false);
         dbPanel.add(new JLabel("Admin Actions:"));
@@ -174,8 +173,6 @@ public class UserManagementWindow extends JFrame {
 
     /**
      * Reinitializes the database by executing schema.sql.
-     * Shows a confirmation dialog before proceeding as this is a destructive
-     * operation.
      */
     private void reinitializeDatabase() {
         int confirm = JOptionPane.showConfirmDialog(
@@ -196,9 +193,13 @@ public class UserManagementWindow extends JFrame {
             if (errors.isEmpty()) {
                 JOptionPane.showMessageDialog(
                         this,
-                        "Database reinitialized",
+                        "Database reinitialized.\nReturning to login screen.",
                         "Success",
                         JOptionPane.INFORMATION_MESSAGE);
+
+                // Close all windows and return to initial window
+                closeAllWindowsAndRestart();
+
             } else {
                 StringBuilder errorMsg = new StringBuilder("Database reinitialized with some errors:\n\n");
                 for (String error : errors) {
@@ -209,11 +210,10 @@ public class UserManagementWindow extends JFrame {
                         errorMsg.toString(),
                         "Partial Success",
                         JOptionPane.WARNING_MESSAGE);
-            }
 
-            // Refresh the user table
-            loadData();
-            clearForm();
+                // Still close and restart even with errors
+                closeAllWindowsAndRestart();
+            }
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -223,5 +223,18 @@ public class UserManagementWindow extends JFrame {
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    /**
+     * Closes all open windows and returns to the initial login window.
+     */
+    private void closeAllWindowsAndRestart() {
+        // Close all windows
+        for (Window window : Window.getWindows()) {
+            window.dispose();
+        }
+
+        // Restart the application
+        SwingUtilities.invokeLater(Main::launch);
     }
 }

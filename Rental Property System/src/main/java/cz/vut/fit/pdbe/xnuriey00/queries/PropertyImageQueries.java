@@ -120,18 +120,13 @@ public class PropertyImageQueries {
 
     /**
      * Retrieves the binary image data for display.
-     * Essentialy a copy of
-     * https://rychly-edu.gitlab.io/dbs/multimedia/oracle/#retrieving-images-and-their-properties-from-database
-     */
-    /**
-     * Retrieves the binary image data for display.
-     * Essentialy a copy of
-     * https://rychly-edu.gitlab.io/dbs/multimedia/oracle/#retrieving-images-and-their-properties-from-database
-     * 
-     * @param imageId
+     * Essentially a copy of
+     * <a href="https://rychly-edu.gitlab.io/dbs/multimedia/oracle/#retrieving-images-and-their-properties-from-database">...</a>
+     *
+     * @param imageId ID of the image
      * @return The image data as a byte array.
-     * @throws SQLException
-     * @throws IOException
+     * @throws SQLException when database fails
+     * @throws IOException when IO fails
      */
     public byte[] getImageData(Long imageId) throws SQLException, IOException {
         String sql = "SELECT IMAGE_DATA FROM PROPERTY_IMAGES WHERE IMAGE_ID = ?";

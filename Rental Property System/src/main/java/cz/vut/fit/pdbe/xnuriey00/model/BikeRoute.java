@@ -7,7 +7,7 @@ import oracle.spatial.geometry.JGeometry;
  * 
  * @author eyobed-dev
  */
-public class BikeRoute {
+public class BikeRoute implements SpatialEntity {
       private Long routeId;
       private String name;
       private JGeometry geometry; // LINESTRING
@@ -21,7 +21,11 @@ public class BikeRoute {
             this.geometry = geometry;
       }
 
-      // Getters and Setters
+      @Override
+      public Long getId() {
+            return routeId;
+      }
+
       public Long getRouteId() {
             return routeId;
       }
@@ -30,6 +34,12 @@ public class BikeRoute {
             this.routeId = routeId;
       }
 
+      @Override
+      public void setId(Long id) {
+            this.routeId = id;
+      }
+
+      @Override
       public String getName() {
             return name;
       }
@@ -38,10 +48,12 @@ public class BikeRoute {
             this.name = name;
       }
 
+      @Override
       public JGeometry getGeometry() {
             return geometry;
       }
 
+      @Override
       public void setGeometry(JGeometry geometry) {
             this.geometry = geometry;
       }

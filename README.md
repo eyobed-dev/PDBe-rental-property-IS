@@ -1,93 +1,223 @@
-# Rental property IS
+# Rental Property Information System (Rental Property IS)
 
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
+[![Maven](https://img.shields.io/badge/Maven-3.8+-blue.svg)](https://maven.apache.org/)
+[![Database](https://img.shields.io/badge/Database-Oracle%2012c%2F18c%2F19c-red.svg)](https://www.oracle.com/database/)
+[![Oracle Spatial](https://img.shields.io/badge/Oracle-Spatial%20%26%20SDO-green.svg)](https://docs.oracle.com/database/121/SPATL/)
+[![Oracle Multimedia](https://img.shields.io/badge/Oracle-Multimedia%20(ORDImage)-purple.svg)](https://docs.oracle.com/database/121/AIVUG/)
 
+> **Course:** Advanced Database Systems (*Pokročilé databázové systémy* – PDBe)  
+> **Academic Year:** 2025/2026  
+> **Institution:** Brno University of Technology (BUT), Faculty of Information Technology (FIT)  
+> **Team:** `xnuriey00`  
+> **Authors:**  
+> - Eyobed Awel Nuri (`xnuriey00`)  
+> - San Kaung (`xsankau00` / `xkaungs00`)  
+> **GitLab Repository:** [rental-property-is](https://gitlab.com/fit-vut1/pdbe/rental-property-is)
 
-## Getting started
+---
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Overview
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+The **Rental Property Information System** is an enterprise desktop application built with **Java Swing** and **Oracle Database**, designed for managing real estate inventory, municipal amenities, and urban infrastructure. 
 
-## Add your files
+The project demonstrates advanced database concepts including:
+- **Oracle Spatial & Graph (`SDO_GEOMETRY`)**: 2D vector geometries, spatial indexing (`MDSYS.SPATIAL_INDEX_V2`), topological relationships (`SDO_ANYINTERACT`, `SDO_FILTER`), proximity queries (`SDO_WITHIN_DISTANCE`), K-Nearest Neighbors (`SDO_NN`), and geometric calculations (`SDO_GEOM.SDO_AREA`, `SDO_GEOM.SDO_LENGTH`, `SDO_GEOM.SDO_CENTROID`).
+- **Oracle Multimedia (`ORDSYS.ORDImage`)**: Content-Based Image Retrieval (CBIR) utilizing image signatures (`ORDSYS.SI_StillImage`) with automated feature extraction via PL/SQL triggers (Average Color, Color Histogram, Positional Color, and Texture).
+- **Interactive Geospatial Canvas**: Custom 2D vector map rendering properties, catchment areas, transit stops, bike routes, and cellular coverage.
+- **Role-Based Access Control (RBAC)**: Distinct permissions for Administrators and Regular Users/Landlords, including user management and in-app database reinitialization.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+---
+
+## User Interface & Demo
+
+![Rental Property IS User Interface](Rental%20Property%20System/demo.png)
+
+The application interface is structured into three primary working areas:
+1. **Left Panel (Multi-Modal Search & Results)**: Relational keyword and price filtering, spatial drawing and proximity searches, and multimedia image similarity scoring. The lower section contains an interactive entity results table.
+2. **Center Panel (Interactive Map & SQL Console)**: Vector map rendering layers, interactive shape selection, layer visibility toggles, and a live SQL Query Log showing statements executed against Oracle.
+3. **Right Panel (Entity Management & Analysis)**: Property details form, image gallery with transformations (rotate, mirror, flip), and spatial analytics calculations (area, perimeter, centroid).
+
+---
+
+## Core Features
+
+### 1. Interactive 2D Map & Geometry Drawing
+- **Multi-layer Geospatial Display**:
+  - **Properties**: Polygons and circles representing apartments and estates.
+  - **Schools**: Catchment polygons defining school districts.
+  - **Transit Stops**: Point markers representing public transportation nodes.
+  - **Cellular Coverage**: Circular and buffered coverage boundaries.
+  - **Bike Routes**: Multi-segment line strings for cycling infrastructure.
+- **Layer Controls**: Toggle visibility of Grid, Properties, Schools, Transit, Cellular Coverage, Bike Routes, and Search Overlays.
+- **Vector Drawing Tools**: Interactive map drawing modes for Points, Lines, Polygons, Circles, and Polygons with Holes.
+
+### 2. Spatial Querying & Analytics (Oracle Spatial)
+- **Proximity Search (`SDO_WITHIN_DISTANCE`)**: Locate properties within a configurable distance (e.g., 500m) of schools, transit stops, or other infrastructure.
+- **K-Nearest Neighbors (`SDO_NN`)**: Find the nearest transit stops, schools, or bike paths relative to a selected property.
+- **Area Boundary Search (`SDO_ANYINTERACT` / `SDO_FILTER`)**: Draw custom polygons on the map to query all entities located within that region.
+- **Geometric Calculations**:
+  - `SDO_GEOM.SDO_AREA`: Computes polygon surface area.
+  - `SDO_GEOM.SDO_LENGTH`: Computes perimeter length.
+  - `SDO_GEOM.SDO_CENTROID`: Computes geometric center point coordinate.
+- **Spatial Indexing**: All spatial tables utilize `MDSYS.SPATIAL_INDEX_V2` with coordinate bounds $[0, 1000]$ registered in `USER_SDO_GEOM_METADATA`.
+
+### 3. Multimedia & Content-Based Image Retrieval (Oracle Multimedia)
+- **Database-Driven Image Storage**: High-resolution property imagery stored as `ORDSYS.ORDImage`.
+- **Automated Feature Extraction**: A PL/SQL database trigger automatically extracts Still Image features (`ORDSYS.SI_StillImage`) upon insert or update:
+  - **AC**: `SI_AverageColor`
+  - **CH**: `SI_ColorHistogram`
+  - **PC**: `SI_PositionalColor`
+  - **TX**: `SI_Texture`
+- **Similarity Search (`SI_Score`)**: Search similar properties based on reference images using weighted feature scores:
+  $$\text{Score} = w_{ac} \cdot \text{Score}_{ac} + w_{ch} \cdot \text{Score}_{ch} + w_{pc} \cdot \text{Score}_{pc} + w_{tx} \cdot \text{Score}_{tx}$$
+- **Image Manipulation**: In-app on-the-fly transformations including horizontal mirroring, 90-degree clockwise rotation, and vertical flipping.
+
+### 4. Relational Search & Property Management
+- **Text & Budget Filtering**: Real-time filtering by building name, address, description, and maximum price slider.
+- **Entity Management**: Create, view, edit, and delete properties and associated amenities.
+- **Live SQL Query Monitor**: Audits and displays all raw SQL queries dispatched to Oracle, making spatial and multimedia operations transparent.
+
+### 5. Role-Based Access Control (RBAC) & DB Administration
+- **Authentication**: Secure login and user registration.
+- **Roles**:
+  - **Administrator (`1`)**: Access to user management (CRUD) and database schema reinitialization.
+  - **Regular User / Landlord (`0`)**: Property listing management and search operations.
+- **In-App Schema Reinitialization**: Admins can execute `schema.sql` directly from the UI to reset or refresh the database.
+
+---
+
+## Database Architecture
+
+The schema utilizes specialized Oracle Object-Relational and Spatial types:
+
+| Table | Description | Special Attributes / Types |
+| :--- | :--- | :--- |
+| `USERS` | Authentication & role management | `USER_ID`, `USERNAME`, `PASSWORD_HASH`, `USER_TYPE` |
+| `PROPERTIES` | Real estate listings & geometries | `PRICE`, `NUM_BEDROOMS`, `SQUARE_METERS`, `GEOMETRY` (`SDO_GEOMETRY`) |
+| `PROPERTY_IMAGES` | Multimedia assets & extracted features | `IMAGE_DATA` (`ORDImage`), `IMAGE_SI` (`SI_StillImage`), `IMAGE_AC`, `IMAGE_CH`, `IMAGE_PC`, `IMAGE_TX` |
+| `SCHOOL_CATCHMENT_AREAS` | School districts & service boundaries | `GEOMETRY` (`SDO_GEOMETRY` – Polygon) |
+| `TRANSIT_STOPS` | Public transport locations | `GEOMETRY` (`SDO_GEOMETRY` – Point) |
+| `CELLULAR_COVERAGE` | Telecommunication coverage zones | `GEOMETRY` (`SDO_GEOMETRY` – Polygon / Buffer Circle) |
+| `BIKE_ROUTES` | Cycling path infrastructure | `GEOMETRY` (`SDO_GEOMETRY` – LineString) |
+
+---
+
+## Getting Started
+
+### Prerequisites
+- **Java 21 JDK** or later
+- **Apache Maven 3.8+**
+- **Oracle Database 12c+** (with Oracle Spatial and Oracle Multimedia components enabled)
+
+### Database Configuration
+
+Connection details are configured in [`Rental Property System/src/main/resources/db.properties`](file:///home/eyobed/Documents/School/BUT/Semester%201/PDBe/PDBe%20Project/rental-property-is/Rental%20Property%20System/src/main/resources/db.properties):
+
+```properties
+db.url=jdbc:oracle:thin:@//<host>:<port>/<service_name>
+db.username=<your_username>
+db.password=<your_password>
+```
+
+> **Note:** Initial database tables and indexes can be created by running [`schema.sql`](file:///home/eyobed/Documents/School/BUT/Semester%201/PDBe/PDBe%20Project/rental-property-is/Rental%20Property%20System/src/main/resources/schema.sql) followed by [`data.sql`](file:///home/eyobed/Documents/School/BUT/Semester%201/PDBe/PDBe%20Project/rental-property-is/Rental%20Property%20System/src/main/resources/data.sql) to seed test data.
+
+---
+
+## Build & Execution
+
+Navigate to the `Rental Property System` directory:
+
+```bash
+cd "Rental Property System"
+```
+
+### Using Provided Helper Scripts
+
+| Script | Purpose | Command |
+| :--- | :--- | :--- |
+| `setup.sh` | Verifies Java/Maven environment and resolves dependencies | `./setup.sh` |
+| `build.sh` | Compiles the project source code | `./build.sh` |
+| `run.sh` | Launches the compiled application | `./run.sh` |
+| `build-and-run.sh` | Compiles and immediately launches the application | `./build-and-run.sh` |
+| `package.sh` | Packages the application into an executable JAR file | `./package.sh` |
+| `clean.sh` | Removes target directory and build artifacts | `./clean.sh` |
+
+### Running via Maven
+
+To compile and launch directly:
+```bash
+mvn clean compile exec:java -Dexec.mainClass="cz.vut.fit.pdbe.xnuriey00.Main"
+```
+
+### Running the Packaged JAR
+
+After running `./package.sh`, execute:
+```bash
+java -jar target/rentalpropertysystem-1.0-SNAPSHOT.jar
+```
+
+---
+
+## Default Credentials
+
+The initial seed data provides the following accounts:
+
+| Role | Username | Password | Access Level |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin` | `admin` *(or `admin123`)* | Full administrative privileges, user management, DB reinitialization |
+| **Regular User** | `landlord1` | `pass123` | Property management, search, and image operations |
+
+*New users can also be registered directly through the application's login window.*
+
+---
+
+## Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/fit-vut1/pdbe/rental-property-is.git
-git branch -M main
-git push -uf origin main
+rental-property-is/
+├── .gitignore                                     # Root Git ignore rules (archives, IDE, temp files)
+├── README.md                                      # Project documentation
+├── Multimedia_photos/                             # Sample images for multimedia similarity testing
+│   ├── vut.jpg
+│   ├── vut2.jpg
+│   └── vut3.jpg
+├── reviews/                                       # Progress reports and reviews
+│   └── 2025-11-30-review.md
+└── Rental Property System/                        # Main Java application directory
+    ├── pom.xml                                    # Maven configuration & course dependencies
+    ├── demo.png                                   # System GUI demonstration screenshot
+    ├── PDBe-User-Manual-latest.docx               # Full project documentation & user manual
+    ├── SCRIPTS_README.md                          # Helper script usage reference
+    ├── setup.sh                                   # Environment check & dependency setup
+    ├── build.sh                                   # Compilation script
+    ├── run.sh                                     # Application launch script
+    ├── build-and-run.sh                           # Build and run script
+    ├── package.sh                                 # Standalone JAR packaging script
+    ├── clean.sh                                   # Build artifact cleanup script
+    └── src/
+        └── main/
+            ├── java/cz/vut/fit/pdbe/xnuriey00/
+            │   ├── Main.java                      # Application entry point
+            │   ├── model/                         # Domain models (Property, BikeRoute, School, Transit, Cellular, User)
+            │   ├── queries/                       # DAO layer (PropertyQueries, SpatialEntityQueries, UserQueries, etc.)
+            │   ├── ui/                            # Swing UI (MainWindow, InitialWindow, UserManagementWindow)
+            │   │   ├── components/                # SearchPanel, SpatialCalculationPanel, PropertyImagePanel
+            │   │   ├── handlers/                  # Entity and map interaction handlers
+            │   │   └── map/                       # Custom vector map canvas, tools, and rendering layers
+            │   └── util/                          # DBConnection, SQLScriptExecutor, UserSession
+            └── resources/
+                ├── db.properties                  # Database connection credentials
+                ├── schema.sql                     # Table definitions, triggers, and spatial metadata
+                ├── data.sql                       # Sample dataset (properties, transit, bike routes, schools)
+                └── logo.png                       # FIT logo icon
 ```
 
-## Integrate with your tools
+---
 
-- [ ] [Set up project integrations](https://gitlab.com/fit-vut1/pdbe/rental-property-is/-/settings/integrations)
+## Academic Context & Course Reference
 
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- **Course:** Pokročilé databázové systémy (PDBe)
+- **Institution:** Faculty of Information Technology, Brno University of Technology
+- **Course Website:** [FIT BUT PDBe Course](https://www.fit.vut.cz/study/courses/PDBe/)
+- **Course Educational Resources:** [Advanced Database Systems Repository](https://rychly-edu.gitlab.io/dbs/)

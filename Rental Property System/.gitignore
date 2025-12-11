@@ -1,8 +1,11 @@
 target/
-!.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 .kotlin
+*.zip
+*.tar.gz
+.~lock.*#
+*.lock
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

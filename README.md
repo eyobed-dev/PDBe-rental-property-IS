@@ -15,7 +15,7 @@ An enterprise desktop application for managing rental properties and urban spati
 
 ---
 
-## Key Features
+## Features
 
 - **Interactive 2D Map:** Real-time vector rendering of properties, schools, transit stops, bike routes, and cellular coverage with interactive drawing tools (points, lines, polygons, circles).
 - **Spatial Queries & Analytics:** Proximity search (`SDO_WITHIN_DISTANCE`), nearest neighbor (`SDO_NN`), boundary filtering (`SDO_ANYINTERACT`), and geometric metrics (area, length, centroid).
